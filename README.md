@@ -32,7 +32,7 @@ A dichas funciones se le pasan la imagen, las coordenadas de comienzo y final de
 
 ### Modificar un plano de imagen
 
-Hay que obtener los planos de la imagen. Hacemos este paso con cada una de las imagenes, por ejemplo para el azul: `b = frame[:,:,0]`. Obtendremos el canal pero se vera en gris ya que no tiene un color asignado. Para ello asignaremos el color del canal original usando `np.zeros_like(frame)`.
+Hay que obtener los planos de la imagen. Hacemos este paso con cada uno de los colores, por ejemplo para el azul: `b = frame[:,:,0]`. Obtendremos el canal pero se vera en gris ya que no tiene un color asignado. Para ello asignaremos el color del canal original usando `np.zeros_like(frame)`.
 
 **Separación de los canales**
 
@@ -68,7 +68,7 @@ Vamos a realizar cambios en una misma imagen para desarrollar una propuesta de P
 w = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
 h = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
 ```
-Para calcular el espacio del collage, el cual contendra 4 divisiones distintas, reducimos a la mitad la resolución de la imagen en altura y en ancho. La imagen resultante es 1/4 de la original. Correspondiendo así a un espacio del collage. 
+Para calcular el espacio del collage, el cual contendra 4 divisiones distintas, reducimos a la mitad la resolución de la imagen en altura y en ancho. La imagen resultante es 1/4  de la original. Correspondiendo así a un espacio del collage. 
 ```
 w = int(w/2)
 h = int(h/2)
