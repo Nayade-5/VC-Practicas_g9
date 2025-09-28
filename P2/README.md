@@ -186,5 +186,176 @@ print("Máximo de columnas Canny", max_col_canny)
 ```
 Por último visualizamos el resultado.
 
+#### TAREA 3: Proponer un demostrador que capture las imágenes de la cámara, y les permita exhibir lo aprendido en estas dos prácticas ante quienes no cursen la asignatura :). Es por ello que además de poder mostrar la imagen original de la webcam, permita cambiar de modo, incluyendo al menos dos procesamientos diferentes como resultado de aplicar las funciones de OpenCV trabajadas hasta ahora.
 
+Vamos a desglosar la realización del demostrador. Para empezar presentamos las opciones del demostrador 
+
+```py
+# Inicializa cámara
+vid = cv2.VideoCapture(0)
+
+modo = 0  # 0 = original
+
+print("Controles:")
+print("  Tecla 0 = Modo original")
+print("  Tecla 1 = Canales RGB separados")
+print("  Tecla 2 = Invertir rojo")
+print("  Tecla 3 = Bordes (Canny)")
+print("  Tecla 4 = Fondo dinámico (MOG2)")
+print("  Tecla 5 = Bloques más claro/oscuro")
+print("  Tecla 6 = Diferencia de fotogramas")
+print("  Tecla 7 = Umbralizado")
+print("  ESC = salir")
+```
+Vía terminal, mostramos los siguientes "prints" que dejan claro los modos a demostrar.
+
+```py
+# Inicializa sustractor de fondo, sirve para separar objetos en movimiento del fondo estatico
+eliminadorFondo = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=50, detectShadows=True)
+```
+El substractor de fondo es un descubrimiento de la librería OpenCV, consiste en comparación del frame para diferenciar el fondo de lo demás.
+
+```py
+disponible = 0
+while True:
+    ret, frame = vid.read()
+    if not ret:
+        break
+
+    salida = frame.copy()
+
+    if modo == 0:
+        # Imagen original
+        salida = frame
+
+    elif modo == 1:
+        # Canales R, G, B separados en collage
+        b = frame[:,:,0]
+        g = frame[:,:,1]
+        r = frame[:,:,2]
+
+        
+        
+        b_color = np.zeros_like(frame); b_color[:,:,0]= b 
+        g_color = np.zeros_like(frame); g_color[:,:,1]= g
+        r_color = np.zeros_like(frame); r_color[:,:,2]= r
+
+        collage = np.hstack((r_color,g_color,b_color))
+        salida = cv2.resize(collage, (int(w*1.5), int(h/2)), cv2.INTER_NEAREST)
+
+    elif modo == 2:
+        # Invertir canal rojo
+        r = frame[:,:,2]
+        r_mod = 255 - r
+        r_color_mod = np.zeros_like(frame)
+        r_color_mod[:,:,2]= r_mod
+        salida = r_color_mod
+
+    elif modo == 3:
+        # Bordes Canny
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 100, 200)
+        salida = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+
+    elif modo == 4:
+        # Bloques más claro y más oscuro
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        block_size = 8
+        h, w = gray.shape
+        small = cv2.resize(gray, (w // block_size, h // block_size), interpolation=cv2.INTER_AREA)
+        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(small)
+        minLoc = (minLoc[0] * block_size, minLoc[1] * block_size)
+        maxLoc = (maxLoc[0] * block_size, maxLoc[1] * block_size)
+        cv2.rectangle(frame, minLoc, (minLoc[0]+block_size, minLoc[1]+block_size), (255,0,0), 2)
+        cv2.rectangle(frame, maxLoc, (maxLoc[0]+block_size, maxLoc[1]+block_size), (0,0,255), 2)
+        salida = frame
+
+    elif modo == 5:
+        if disponible > 0:
+            dif = cv2.absdiff(frame, pframe)
+            green_color_mod = np.zeros_like(dif)
+            g = 128 - dif[:,:,1]
+            green_color_mod[:,:,1] = g
+            salida = green_color_mod
+        else:
+            disponible = 1
+        
+        pframe = frame.copy()
+    elif modo == 6:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        salida = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR) 
+
+    cv2.imshow('Demostrador', salida)
+```
+En este bucle se introducen la lógica del demostrador. los distintos modos comprenden conocimientos vistos en las 2 prácticas realizadas hasta ahora. Primero jugando con los planos de la imagen, invirtiendo colores y luego buscando zonas claras, oscuras y detección de bordes.
+```py
+    # Controles de teclado
+    tecla = cv2.waitKey(20)
+    if tecla == 27:  # ESC
+        break
+    elif tecla in [ord('0'), ord('1'), ord('2'), ord('3'), ord('4'), ord('5'), ord('6')]:
+        modo = int(chr(tecla))
+
+# Liberar recursos
+vid.release()
+cv2.destroyAllWindows()
+
+```
+Para diferenciar la tecla "ESC" del resto de teclas pulsadas necesitamos especificar el número de tecla. Si alguna de las teclas pulsadas esta entre el 0 y 6, sacamos el valor entero de esa tecla para trabajar con ella.
+
+#### TAREA 4: Tras ver los vídeos [My little piece of privacy](https://www.niklasroy.com/project/88/my-little-piece-of-privacy), [Messa di voce](https://youtu.be/GfoqiyB1ndE?feature=shared) y [Virtual air guitar](https://youtu.be/FIAmyoEpV5c?feature=shared) proponer un demostrador reinterpretando la parte de procesamiento de la imagen, tomando como punto de partida alguna de dichas instalaciones.
+
+
+Se propone para este ejercicio un código que encuentra contornos en la imagen y los redondea. Dependerán dichos contornos del movimiento en la imagen, por lo que se usa detector de movimiento. Explicado a continuación ->.
+```py
+cap = cv2.VideoCapture(0)
+
+# detecta movimiento comparando el frame actual con un fondo estimado
+fgbg = cv2.createBackgroundSubtractorMOG2()
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+    
+    fgmask = fgbg.apply(frame)
+
+    contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+```
+Creamos un substractor del fondo, que básicamente se va a convertir en una imagen en blanco y negro que detecta los movimientos entre frames. Aplicamos esa diferencia en `fgmask = fgbg.apply(frame)`. Usamos esta máscara que detecta los movimientos para encontrar contornos en la imagen, haciendo uso de `cv2.findContours()`.
+
+```py
+    # Convertir frame a PIL para dibujar encima
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_img = Image.fromarray(frame_rgb)
+    draw = ImageDraw.Draw(pil_img)
+```
+Por fin, usamos PIL para permitir el dibujo sobre los fotogramas captados. Para ello, usando `cv2.cvtColor()`, modificamos el set de colores del frame ya que PIL trabaja en RGB a diferencia de OpenCV. Indicamos que se dibujará sobre esta imagen con `ImageDraw.Draw(pil_img)`
+```py
+    for cnt in contours:
+        if cv2.contourArea(cnt) > 500:  # umbral mínimo
+            x, y, w, h = cv2.boundingRect(cnt)
+            # Dibujar un círculo dinámico sobre la persona
+            draw.ellipse((x, y, x+w, y+h), outline="red", width=5)
+```
+Antes hemos buscado los contornos, los cuales fueron guardados en una lista, ahora recorremos dicha lista y con `cv2.contourArea()` comprobamos si merece la pena describir ese contorno (no es demasiado pequeño). Esto lo hacemos a través de un valor umbral arbitrario. 
+
+Luego, dentro de la condición, sacamos las dimensiones de ese contorno y lo dibujamos en rojo.
+```py
+    # Convertir de vuelta a OpenCV
+    frame_out = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+    
+    # Mostrar ventana
+    cv2.imshow("Sombras sonoras (demo)", frame_out)
+    
+    if cv2.waitKey(30) & 0xFF == 27:  # Esc para salir
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+```
+
+Para acabar debemos devolver la imagen a formato BGR para que OpenCV la enseñe correctamente. Usando NumPy reconvertimos la imagen PIL en un array y aplicamos el cambio. Finalmente Mostramos los resultados.
 
