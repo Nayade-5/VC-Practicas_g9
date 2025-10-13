@@ -212,11 +212,13 @@ plt.show()
 
 ### TAREA: La tarea consiste en extraer características (geométricas y/o visuales) de las tres imágenes completas de partida, y _aprender_ patrones que permitan identificar las partículas en nuevas imágenes. Para ello se proporciona como imagen de test _MPs_test.jpg_ y sus correpondientes anotaciones _MPs_test_bbs.csv_ con la que deben obtener las métricas para su propuesta de clasificación de microplásticos, además de la matriz de confusión. La matriz de confusión permitirá mostrar para cada clase el número de muestras que se clasifican correctamente de dicha clase, y el número de muestras que se clasifican incorrectamente como perteneciente a una de las otras dos clases.
 
+Para comenzar la detección y reconocimiento de formas tenemos que pasar por varias fases en el entrenamiento. La primera de ellas será obtener características que nos permitan distinguir los microplásticos por su tipo.
+
 ### Extracción de características
 
 Calcula siete medidas geométricas de cada entorno detectado: área, perímetro, compacidad, solidez, relacion de aspecto, relación de ejes elípticos y símetrica radial. Estas características describen la forma de la partícula y sirven como base para que el modelo aprenda a diferenciar los tipos de microplásticos.
 
-El área y el perímetro reflejan el tamaño y extensión; la compacidad y solidez indican qué tan regular o fragmentada es una estructura; la relacioón de aspecto muestra la proporcion entre ancho y alto, mientras que la relación de ejes elípticos y simetría radial permiten estimat el grado de circularidad.
+El área y el perímetro reflejan el tamaño y extensión; la compacidad y solidez indican qué tan regular o fragmentada es una estructura; la relación de aspecto muestra la proporción entre ancho y alto, mientras que la relación de ejes elípticos y simetría radial permiten estimar el grado de circularidad.
 
 ```py
 def extract_features(contour):
@@ -245,4 +247,95 @@ def extract_features(contour):
     return [area, perimeter, compactness, solidity, aspect_ratio, ellipse_ratio, centroid_dist_ratio]
 
 
+```
+
+La siguiente fase de la detección consistirá en usar las imágenes `FRA.png`, `TAR.png` y `PEL.png` dadas para entrenar un modelo con respecto a las características obtenidas anteriormente. Estas contienen 3 tipos distintos de microplásticos con muestras de ejemplo.
+
+- PEL: Pellets, muestras más redondeadas
+- FRA: Fragments, muestras de plásticos con más esquinas
+- TAR: Muestras orgánicas que no necesariamente vienen de plástico pero que estan bastante presentes en Canarias y se detectan por su color oscuro.
+
+### Procesamiento de imágenes de entrenamiento
+
+Convierte la escala de las imágenes a grises, se suavizan y binarizan. Todo esto se lleva a cabo para poder separar los microplásticos del fondo. Posteriormente, se usa `cv2.findContours()` para localizar los bordes de cada partícula y luego con `extract_features()`, funcion del paso anterior, genera un conjunto de vectores numéricos junto a sus etiquetas.
+
+```py
+def process_image_for_features(image_path, label):
+    if not os.path.exists(image_path):
+        print(f"Imagen no encontrada: {image_path}")
+        sys.exit(1)
+    image = cv2.imread(image_path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, binary_mask = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    features_list = [f for c in contours if (f := extract_features(c)) is not None]
+    labels = [label] * len(features_list)
+    return features_list, labels
+```
+
+Los datos de las tres imágenes se van a combinar en dos conjuntos de entrenamientos llamados `X_train` e `Y_train` con los cuales podrá aprender a reconocer las diferencias entre los tres distintos tipos de partículas.
+
+```py
+print("Procesando imágenes de entrenamiento")
+features_pel, labels_pel = process_image_for_features('PEL.png', 'PEL')
+features_tar, labels_tar = process_image_for_features('TAR.png', 'TAR')
+features_fra, labels_fra = process_image_for_features('FRA.png', 'FRA')
+X_train = np.array(features_pel + features_tar + features_fra)
+y_train = np.array(labels_pel + labels_tar + labels_fra)
+print(f"{len(X_train)} partículas extraídas para entrenamiento.\n")
+```
+
+El modelo elegido es un RandomForest. Este es un conjunto de árboles de decisión que entrenan usando distintas partes del conjunto de datos. Cada árbol vota por una clase y la combinación de todos produce una decisión más fiable y menos sensible.
+En el estudio adjunto a la tarea este es uno de los modelos preferidos para realizar el análisis.
+
+- `n_estimators=400`: se crean 400 árboles de decisión
+- `class_weight="balanced"`: se usa este parámetro para que el modelo compense automáticamente la diferencia en el número de ejemplos de cada clase. Este último parámetro es importante porque algunas imágenes pueden contener más o menos partículas de un tipo que de otro. Esto provocaría un sesgo si no es corregido.
+
+```py
+model = RandomForestClassifier(n_estimators=400, random_state=42, class_weight="balanced")
+model.fit(X_train, y_train)
+```
+
+A continuación se importan la imagen de prueba `MPs_test.jpg` y sus anotaciones `MPs_test_bbs.csv`. Serán usadas para evaluar la fiabilidad del modelo. Cada recorte anotado se procesa al igual que las imágenes de entrenamiento, esto es, extrayendo sus siete características por partícula.
+
+```py
+
+print("Procesando imagen y anotaciones de prueba")
+test_image_path = 'MPs_test.jpg'
+test_csv_path = 'MPs_test_bbs.csv'
+if not os.path.exists(test_image_path) or not os.path.exists(test_csv_path):
+    print("Archivos de prueba no encontrados.")
+    sys.exit(1)
+
+test_img = cv2.imread(test_image_path)
+test_annotations = pd.read_csv(test_csv_path)
+
+X_test, y_test = [], []
+```
+
+Así, son obtenidos los datos de prueba `x_test` e `y_test` junto con sus coordenadas para la visualización posterior
+
+```py
+
+
+for _, row in test_annotations.iterrows():
+    x_min, y_min, x_max, y_max = map(int, [row['x_min'], row['y_min'], row['x_max'], row['y_max']])
+    crop = test_img[y_min:y_max, x_min:x_max]
+
+    if crop.size == 0:
+        continue
+
+    gray_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    _, binary_crop = cv2.threshold(gray_crop, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(binary_crop, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    if contours:
+        main_contour = max(contours, key=cv2.contourArea)
+        features = extract_features(main_contour)
+        if features:
+            X_test.append(features)
+            y_test.append(row['label'])
+
+print(f"{len(X_test)} partículas procesadas\n")
 ```
