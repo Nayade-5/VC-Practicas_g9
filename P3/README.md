@@ -1,5 +1,10 @@
 ## Práctica 3. Detección y reconocimiento de formas
 
+David Suárez Martel
+Náyade García Torres
+
+- Grupo 9
+
 ### Contenido
 
 Ejercicios para detectar formas en imágenes.
@@ -314,7 +319,9 @@ test_annotations = pd.read_csv(test_csv_path)
 X_test, y_test = [], []
 ```
 
-Así, son obtenidos los datos de prueba `x_test` e `y_test` junto con sus coordenadas para la visualización posterior
+A continuación , son obtenidos los datos de prueba `x_test` e `y_test` para su posterior análisis y comparación con los datos detectados por el modelo.
+
+Gracias a la librería `Pandas` podemos iterar facilmente por el archivo csv que contiene las anotaciones, obteniendo las posiciones y valores.
 
 ```py
 
@@ -339,3 +346,64 @@ for _, row in test_annotations.iterrows():
 
 print(f"{len(X_test)} partículas procesadas\n")
 ```
+
+Una vez obtenidos los conjuntos de prueba y de entrenamiento. Ya podemos evaluar el modelo. Con `model.predict()` podemos obtener las clases predichas por el modelo, para posteriormente comparar con los resultados reales (`y_test`).
+
+```py
+y_pred = model.predict(X_test)
+labels = sorted(list(set(y_test)))
+```
+
+Luego, se imprime un reporte de clasificación que nos muestra las métricas principales de la detección.
+
+- Accuracy
+- Recall
+- Precisión
+- F1-score
+
+En nuestro caso, teniendo en cuenta las dificultades reales, el resultado es el siguiente:
+
+```
+CLASIFICACIÓN
+              precision    recall  f1-score   support
+
+         FRA       0.62      0.82      0.71        49
+         PEL       0.71      0.44      0.55        34
+         TAR       0.50      0.43      0.46        14
+
+    accuracy                           0.63        97
+   macro avg       0.61      0.56      0.57        97
+weighted avg       0.64      0.63      0.62        97
+```
+
+Explicaremos estos resultados más adelante.
+
+Además de esto, como es pedido en el ejercicio, se construye una matriz de confusión que nos permitirá visualizar como el modelo ha detectado las partículas.
+POr ejemplo, muchas de las partículas clasificadas como TAR pueden ser clasificadas como FRA.
+En esta matriz de confusión:
+
+- Filas: Valor Real
+- Columnas: Predicción
+- Diagonal: Aciertos
+
+```py
+print("\nCLASIFICACIÓN")
+print(classification_report(y_test, y_pred, labels=labels, zero_division=0))
+
+conf_matrix = confusion_matrix(y_test, y_pred, labels=labels)
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues',
+            xticklabels=labels, yticklabels=labels)
+plt.title("Matriz de Confusión", fontsize=16)
+plt.xlabel("Predicción")
+plt.ylabel("Real")
+plt.tight_layout()
+plt.savefig("confusion_matrix_generada.png")
+print("Matriz de confusión guardada como 'confusion_matrix_generada.png'.")
+```
+
+![Matriz de confusión generada](confusion_matrix_generada.png)
+
+En conclusión, se nos queda que el modelo es relativamente bueno identificando fragmentos FRA cuando realmente lo son. Sin embargo confunde tanto los Pellets como los TAR (Alquitrán) con los FRA. Se puede aver una precisión de un 63%, lo que signfica que acierta 6 de cada 10 veces.
+
+Esto también se puede observar debido al alto valor en el **recall** del reporte de clasificación pero también en la primera columna de la matriz, en la que se ve que prioritariamente detecta fragmentos FRA errónamente.
