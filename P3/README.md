@@ -211,3 +211,38 @@ plt.show()
 ```
 
 ### TAREA: La tarea consiste en extraer características (geométricas y/o visuales) de las tres imágenes completas de partida, y _aprender_ patrones que permitan identificar las partículas en nuevas imágenes. Para ello se proporciona como imagen de test _MPs_test.jpg_ y sus correpondientes anotaciones _MPs_test_bbs.csv_ con la que deben obtener las métricas para su propuesta de clasificación de microplásticos, además de la matriz de confusión. La matriz de confusión permitirá mostrar para cada clase el número de muestras que se clasifican correctamente de dicha clase, y el número de muestras que se clasifican incorrectamente como perteneciente a una de las otras dos clases.
+
+### Extracción de características
+
+Calcula siete medidas geométricas de cada entorno detectado: área, perímetro, compacidad, solidez, relacion de aspecto, relación de ejes elípticos y símetrica radial. Estas características describen la forma de la partícula y sirven como base para que el modelo aprenda a diferenciar los tipos de microplásticos.
+
+El área y el perímetro reflejan el tamaño y extensión; la compacidad y solidez indican qué tan regular o fragmentada es una estructura; la relacioón de aspecto muestra la proporcion entre ancho y alto, mientras que la relación de ejes elípticos y simetría radial permiten estimat el grado de circularidad.
+
+```py
+def extract_features(contour):
+    """Extrae 7 características geométricas de un contorno."""
+    area = cv2.contourArea(contour)
+    if area < 20:
+        return None
+    perimeter = cv2.arcLength(contour, True)
+    compactness = (perimeter ** 2) / area if area > 0 else 0
+    x, y, w, h = cv2.boundingRect(contour)
+    bbox_area = w * h
+    solidity = area / bbox_area if bbox_area > 0 else 0
+    aspect_ratio = w / h if h > 0 else 0
+    if len(contour) >= 5:
+        (center, axes, angle) = cv2.fitEllipse(contour)
+        major_axis, minor_axis = max(axes), min(axes)
+        ellipse_ratio = minor_axis / major_axis if major_axis > 0 else 0
+    else:
+        ellipse_ratio = 0
+    M = cv2.moments(contour)
+    if M["m00"] == 0:
+        return None
+    cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
+    distances = [np.hypot(pt[0][0] - cx, pt[0][1] - cy) for pt in contour]
+    centroid_dist_ratio = min(distances) / max(distances) if max(distances) > 0 else 0
+    return [area, perimeter, compactness, solidity, aspect_ratio, ellipse_ratio, centroid_dist_ratio]
+
+
+```
