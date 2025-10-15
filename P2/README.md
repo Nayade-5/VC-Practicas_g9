@@ -1,5 +1,10 @@
 ## Práctica 2. Funciones OpenCV
 
+Grupo 9:
+
+- David Suárez Martel
+- Náyade García Torres
+
 ### Contenido
 
 Ejercicios realizados con funciones de OpenCV
@@ -73,6 +78,15 @@ plt.show()
 ```
 
 Exponemos el resultado usando al librería Matplotlib. En un subplot ponemos la imagen y en otro el gráfico. Se marcan los umbrales con lineas horizontales y con verticales se muestran las filas que superaron el umbral exigido.
+
+![alt text](output1.png)
+
+```
+Valor máximo de píxeles blancos en una fila (maxfil): 0.4296875
+Filas con al menos el 90% de maxfil (0.38671875 píxeles): [  6  12  15  20  21  88 100]
+```
+
+Podemos finalmente observar las filas que superan el umbral especificado y el nivel de pixeles blancos por filas.
 
 #### TAREA 2: Aplica umbralizado a la imagen resultante de Sobel (convertida a 8 bits), y posteriormente realiza el conteo por filas y columnas similar al realizado en el ejemplo con la salida de Canny de píxeles no nulos. Calcula el valor máximo de la cuenta por filas y columnas, y determina las filas y columnas por encima del 0.90\*máximo. Remarca con alguna primitiva gráfica dichas filas y columnas sobre la imagen del mandril. ¿Cómo se comparan los resultados obtenidos a partir de Sobel y Canny?
 
@@ -196,6 +210,9 @@ print("Máximo de columnas Canny", max_col_canny)
 ```
 
 Por último visualizamos el resultado.
+![alt text](output2.png)
+
+Obtenemos una comparativa de filas entre el método Canny y Sobel. Se observa que Canny cumple de manera mas precisa con la detección de bordes y Sobel detecta más cantidad de puntos.
 
 #### TAREA 3: Proponer un demostrador que capture las imágenes de la cámara, y les permita exhibir lo aprendido en estas dos prácticas ante quienes no cursen la asignatura :). Es por ello que además de poder mostrar la imagen original de la webcam, permita cambiar de modo, incluyendo al menos dos procesamientos diferentes como resultado de aplicar las funciones de OpenCV trabajadas hasta ahora.
 
