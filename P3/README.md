@@ -215,6 +215,10 @@ plt.show()
 
 ```
 
+![alt text](monedas_result.png)
+
+Podemos observar que para el caso ideal de las monedas, la detección es perfecta debido a la relación de escala entre las monedas que se diferencia perfectamente. Sin embargo, en las demás al encontrarse en diferentes distancias y ángulos, la detección funciona pero no con los valores deseados. Se llega a confundir el fondo gris con la moneda de 2€ o se detectan más grandes de lo que realmente son.
+
 ### TAREA: La tarea consiste en extraer características (geométricas y/o visuales) de las tres imágenes completas de partida, y _aprender_ patrones que permitan identificar las partículas en nuevas imágenes. Para ello se proporciona como imagen de test _MPs_test.jpg_ y sus correpondientes anotaciones _MPs_test_bbs.csv_ con la que deben obtener las métricas para su propuesta de clasificación de microplásticos, además de la matriz de confusión. La matriz de confusión permitirá mostrar para cada clase el número de muestras que se clasifican correctamente de dicha clase, y el número de muestras que se clasifican incorrectamente como perteneciente a una de las otras dos clases.
 
 Para comenzar la detección y reconocimiento de formas tenemos que pasar por varias fases en el entrenamiento. La primera de ellas será obtener características que nos permitan distinguir los microplásticos por su tipo.
