@@ -6,9 +6,20 @@ Grupo 9
 
 
 ### Entrenamiento
-En este proyecto, entrenamos un detector de matrículas personalizado usando un conjunto de datos de "cosecha propia". Todas las imágenes fueron recopiladas y etiquetadas manualmente por nosotros, asegurando que se ajustan a nuestro objetivo.
+En este proyecto, entrenamos un detector de matrículas personalizado usando un conjunto de datos de "cosecha propia". Todas las imágenes fueron recopiladas y etiquetadas manualmente por nosotros, asegurando que se ajustan a nuestro objetivo. Hemos colaborado y recopilado hasta **600 imágenes** en el set de entrenamiento. La división de imagenes fue: 
+- Entrenamiento 64%
+- Validación 16%
+- Test 20%
 
-La técnica usada es aprendizaje por transferencia. En lugar de empezar desde cero, tomamos el modelo YOLO, que sabe identificar objetos comunes y lo re-entrenamos con nuestro dataset.
+Para repartir las imágenes del sistema de ficheros usamos un script de python llamado `division_archivos.py`. Al tratarse de una automatización rápida, hicimos uso de la IA de google Gemini para que nos asisitiera en la creación del script con breves modificaciones.
+
+A su vez, al etiquetar las imágenes usando `LabelMe`, el script mencionado arriba tuvo el apoyo de otro script `json_a_txt.py` para traducir las anotaciones de LabelMe de cada imagen a un txt legible por el modelo, acompañado de su correspondiente imagen.
+
+Esto no solo agilizó el proceso si no que lo hizo más sostenible a la hora de añadir nuevas imágenes al dataset.
+Estos scripts se pueden consultar en P4\division_archivos.py y P4\json_a_txt.py.
+
+
+La técnica usada en el entrenamiento es aprendizaje por transferencia. En lugar de empezar desde cero, tomamos el modelo YOLO, que sabe identificar objetos comunes y lo re-entrenamos con nuestro dataset.
 
 ```py
 from ultralytics import YOLO
@@ -53,7 +64,9 @@ Los resultados fueron excelentes: el modelo alcanzó una Precisión (P) del 99.1
 
 La nota de rendimiento principal (mAP50) fue de 96.7%, y la métrica más estricta (mAP50-95) alcanzó un 81.8%. Estos resultados confirman que el modelo es altamente preciso y fiable para localizar matrículas con gran exactitud.
 
+A continuación podemos apreciar los resultados gráficos del entrenamiento:
 
+![Resultados entrenamiento](results.png)
 
 ### Pipeline
 Este script de Python implementa un pipeline completo para el análisis de vídeos de tráfico y de 'cosecha propia'. El objetivo es detectar vehículos y localizar sus matrículas.
@@ -714,30 +727,32 @@ Después, imprime un resumen de los resultados en la consola mostrando cuántas 
 Por último, genera y guarda dos gráficas; precisión de aciertos y tiempo medio de lectura.
 
 Estas gráficas permiten comparar visualmente el rendimiento de EasyOCR y Tesseract, y se guardan como imágenes (grafica_precision.png y grafica_tiempo.png) para futuras referencias.
-Generando 'matricula_real' automáticamente desde el nombre del archivo...
+
 Columna 'matricula_real' generada con éxito.
 
 --- CONCLUSIONES DE LA COMPARATIVA ---
-Base de datos: 50 imágenes analizadas
+Base de datos: 102 imágenes analizadas
 ----------------------------------------
 [Tasa de Acierto (Precisión)]
-  EasyOCR:   28.00% (14 de 50)
-  Tesseract: 4.00% (2 de 50)
+  EasyOCR:   44.12% (45 de 102)
+  Tesseract: 5.88% (6 de 102)
 
 [Tiempo de Inferencia Medio (CPU)]
-  EasyOCR:   3.8527 segundos
-  Tesseract: 2.3696 segundos
+  EasyOCR:   0.5561 segundos
+  Tesseract: 0.1324 segundos
 ----------------------------------------
 
 Gráfica 'grafica_precision.png' guardada.
-<img width="728" height="530" alt="image" src="https://github.com/user-attachments/assets/c6ef2729-d391-418f-a994-aa93ef8a41fd" />
 
-<img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
+![Grafica Precisión](results/grafica_precision.png)
 
-El resultado muestra que, de las 50 imágenes analizadas de la carpeta test:
-* **EasyOCR** acertó 14 de 50 matriculas y tardó 3.85 segundos por imagen.
-* **Tessreact** acertó solo 2 matrículas y fue más rápido, con 2.37 segundos imagen.
-En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso.
+![Gráfica Tiempo](results/grafica_tiempo.png)
+
+El resultado muestra que, de las 102 imágenes analizadas de la carpeta test:
+* **EasyOCR** acertó 45 de 102 matriculas y tardó 0.5561 segundos por imagen.
+* **Tessreact** acertó solo 6 matrículas y fue más rápido, con 0.1324 segundos por imagen.
+En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso. Si se busca una opción más fiable pero más lenta incluso que estos dos modelos, convendría el uso de un VLM como se menciona en el README de la práctica.
+
 
 
 
