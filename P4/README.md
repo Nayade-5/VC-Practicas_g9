@@ -53,7 +53,7 @@ Los resultados fueron excelentes: el modelo alcanzó una Precisión (P) del 99.1
 
 La nota de rendimiento principal (mAP50) fue de 96.7%, y la métrica más estricta (mAP50-95) alcanzó un 81.8%. Estos resultados confirman que el modelo es altamente preciso y fiable para localizar matrículas con gran exactitud.
 
-<img width="1048" height="561" alt="imagen" src="https://github.com/user-attachments/assets/6fd75aa1-77d3-44dc-8358-578e76309711" />
+
 
 ### Pipeline
 Este script de Python implementa un pipeline completo para el análisis de vídeos de tráfico y de 'cosecha propia'. El objetivo es detectar vehículos y localizar sus matrículas.
@@ -218,7 +218,11 @@ Le pasamos:
                 if img_vehiculo.size > 0:
                     vehicle_rois.append(img_vehiculo)
                     vehicle_data_batch.append((csv_row, (x1, y1)))
+```
 
+En este bloque, el código procesa todos los objetos detectados en el fotograma, obteniendo su posición, clase, nivel de confianza y ID de seguimiento. Para las personas, dibuja un rectángulo rojo con su ID y registra la información en un conjunto y en el CSV. Para los vehículos (coches, buses y camiones), dibuja un rectángulo azul, recorta la región del vehículo para procesar las placas más adelante y almacena los datos correspondientes para actualizar la información de la matrícula posteriormente.
+
+```py
     if vehicle_rois:
         results_plates = plate_model.track(
             vehicle_rois,
@@ -270,6 +274,13 @@ Le pasamos:
                     break
 
             csv_data.append(csv_row)
+```
+
+
+En esta sección, el código analiza los vehículos recortados para localizar y leer sus placas. Cada matrícula detectada se posiciona correctamente sobre la imagen original, se recorta y se procesa con OCR para extraer su texto, que se limpia y se convierte a mayúsculas. Luego, se dibuja un rectángulo verde sobre la placa mostrando el texto y su nivel de confianza, y toda esta información se almacena en el CSV para su registro y análisis posterior.
+
+
+```py
 
     out_video.write(frame)
 
@@ -302,7 +313,9 @@ print(f"Total de personas únicas: {len(total_people)}")
 print(f"Total de vehículos únicos: {len(total_vehicles)}")
 print(f"Total de detecciones de matrícula: {total_plates}")
 ```
+Cada fotograma procesado se guarda en el video de salida y se muestra en pantalla. Al finalizar, se liberan los recursos y se genera un CSV con toda la información de objetos y matrículas detectadas. Finalmente, se imprime un resumen con el total de personas, vehículos y matrículas, y se confirma que el video y el CSV se han guardado correctamente.
 
+<img width="1048" height="561" alt="imagen" src="https://github.com/user-attachments/assets/6fd75aa1-77d3-44dc-8358-578e76309711" />
 
 Esta sección del código detecta vehículos y lee matrículas en imágenes usando YOLO para la detección y EasyOCR para el reconocimiento de texto. Primero identifica los vehículos, luego localiza las placas y extrae su texto, mostrando toda la información sobre la imagen. Es útil para aplicaciones como control de tráfico o vigilancia.
 
@@ -725,6 +738,7 @@ El resultado muestra que, de las 50 imágenes analizadas de la carpeta test:
 * **EasyOCR** acertó 14 de 50 matriculas y tardó 3.85 segundos por imagen.
 * **Tessreact** acertó solo 2 matrículas y fue más rápido, con 2.37 segundos imagen.
 En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso.
+
 
 
 
