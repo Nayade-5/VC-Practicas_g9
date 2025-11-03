@@ -13,6 +13,7 @@ device=0
 )
 ```
 
+
 ```py
 from ultralytics import YOLO
 import cv2
@@ -509,3 +510,24 @@ else:
         print("Gráfica 'grafica_tiempo.png' guardada.")
         plt.show()
 ```
+
+Generando 'matricula_real' automáticamente desde el nombre del archivo...
+Columna 'matricula_real' generada con éxito.
+
+--- CONCLUSIONES DE LA COMPARATIVA ---
+Base de datos: 50 imágenes analizadas
+----------------------------------------
+[Tasa de Acierto (Precisión)]
+  EasyOCR:   28.00% (14 de 50)
+  Tesseract: 4.00% (2 de 50)
+
+[Tiempo de Inferencia Medio (CPU)]
+  EasyOCR:   3.8527 segundos
+  Tesseract: 2.3696 segundos
+----------------------------------------
+
+Gráfica 'grafica_precision.png' guardada.
+<img width="728" height="530" alt="image" src="https://github.com/user-attachments/assets/c6ef2729-d391-418f-a994-aa93ef8a41fd" />
+
+<img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
+
