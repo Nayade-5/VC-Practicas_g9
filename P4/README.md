@@ -340,7 +340,8 @@ print("Ventana cerrada.")
 
 En esta parte del código, se compara el rendimiento de dos modelos de OCR diferentes: **EasyOCR** y **Tesseract**.
 
-El script procesa toda nuestra batería de imágenes de la carpeta "test" y, en lugar de mostrar ventanas, genera un archivo `comparativa_ocr.csv `que contiene todos los datos de la prueba
+El script procesa toda nuestra batería de imágenes de la carpeta "test" y, en lugar de mostrar ventanas, genera un archivo `comparativa_ocr.csv `que contiene todos los datos de la prueba.
+
 ```py
 from ultralytics import YOLO
 import cv2
@@ -369,14 +370,27 @@ except FileNotFoundError:
 
 print("Forzando carga de EasyOCR en CPU.")
 reader_ocr = easyocr.Reader(['es', 'en'], gpu=False)
+```
+Primero, se **configura Tesseract**, definiendo la ruta de su ejecutable para que el programa pueda usarlo correctamente al momento de reconocer texto.
+
+Luego, se **carga el modelo YOLO preentrenado** (`yolo11n.pt`), el cual permite **detectar distintos tipos de vehículos** presentes en las imágenes.
+
+A continuación, se **intenta cargar el modelo entrenado para detectar matrículas** (`best.pt`). Si este archivo no se encuentra en la ruta indicada, el programa muestra un mensaje de error y se detiene.
+
+Finalmente, se **inicializa el lector OCR (EasyOCR)**, configurado para trabajar en **español e inglés**, y se fuerza su ejecución en **CPU** para garantizar compatibilidad incluso si no hay GPU disponible.
+
+```py
 # ------------------------------------------
 
 classes_to_detect = [0, 2, 5, 7]
 
 IMAGE_FOLDER_PATH = "matriculas/test/images"
 CSV_OUTPUT_FILE = "comparativa_ocr.csv"
+```
+En esta parte se indican las **clases de objetos** que YOLO debe detectar (vehículos), la **carpeta** donde se buscarán las imágenes de prueba y el **archivo CSV** donde se guardarán los resultados finales.
 
 
+```py
 all_results = []
 
 print(f"Iniciando comparativa en la carpeta: {IMAGE_FOLDER_PATH}...")
@@ -385,7 +399,11 @@ print(f"Iniciando comparativa en la carpeta: {IMAGE_FOLDER_PATH}...")
 if not os.path.exists(IMAGE_FOLDER_PATH):
     print(f"ERROR: La carpeta de imágenes no existe: {IMAGE_FOLDER_PATH}")
     exit()
+```
+El programa comprueba si la carpeta existe.
+Si no la encuentra, muestra un mensaje de error y termina la ejecución para evitar fallos posteriores.
 
+```py
 for image_name in os.listdir(IMAGE_FOLDER_PATH):
     # Asegurarse de que solo procesamos imágenes
     if not image_name.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -399,7 +417,13 @@ for image_name in os.listdir(IMAGE_FOLDER_PATH):
         continue
 
     print(f"Procesando: {image_name}")
+```
+Se recorre la carpeta y se procesan solo los archivos de imagen válidos, ignorando cualquier otro tipo de archivo.
 
+Luego se intenta leer la imagen con OpenCV (cv2.imread).
+Si no se puede abrir, se muestra una advertencia y se pasa a la siguiente.
+
+```py
     resultados = vehicle_model(
         frame,
         classes=classes_to_detect,
@@ -426,7 +450,11 @@ for image_name in os.listdir(IMAGE_FOLDER_PATH):
                     abs_py1 = py1 + y1
                     abs_px2 = px2 + x1
                     abs_py2 = py2 + y1
+```
+YOLO detecta vehículos en la imagen con una confianza mínima del 40%.
+Por cada vehículo detectado, se recorta la zona correspondiente y se usa el modelo de matrículas (plate_model) para buscar la placa dentro del vehículo.
 
+```py
                     img_placa_recortada = frame[abs_py1:abs_py2, abs_px1:abs_px2]
 
                     texto_easyocr = ""
@@ -452,7 +480,17 @@ for image_name in os.listdir(IMAGE_FOLDER_PATH):
                         tiempo_tesseract = time.time() - start_time
                         texto_tesseract = "".join(filter(str.isalnum, texto_tesseract.strip()))
 
+```
+Esta es la parte principal del proceso.
+Primero, el programa **recorta la zona de la matrícula detectada** por el modelo.
 
+Si el recorte es válido, **usa los dos OCR para leerla**:
+
+* **EasyOCR:** mide cuánto tarda en leer el texto y limpia el resultado.
+* **Tesseract:** convierte la imagen a blanco y negro, mide su tiempo de lectura y también limpia el texto obtenido.
+
+
+```py
                     all_results.append({
                         'imagen': image_name,
                         'conf_matricula': placa_conf,
@@ -463,7 +501,11 @@ for image_name in os.listdir(IMAGE_FOLDER_PATH):
                     })
 
                     break
+```
+Después de la comparación, el programa **guarda los resultados** (nombre, textos y tiempos de ambos OCR) en la lista `all_results`.
+El **`break`** indica que, tras detectar una matrícula, se detenga y pase a la siguiente imagen, evitando duplicados.
 
+```py
 if not all_results:
     print("\nAdvertencia: No se detectó ninguna matrícula en ninguna imagen. El archivo CSV estará vacío.")
 else:
@@ -473,6 +515,9 @@ else:
     print(f"Resultados de la comparativa guardados en: {CSV_OUTPUT_FILE}")`
 ```
 
+Al final, el script verifica si `all_results` tiene datos.
+Si los hay, los convierte en un **DataFrame** con pandas y los guarda en `comparativa_ocr.csv`.
+Luego imprime que el **proceso ha terminado**.
 
 
 
@@ -578,6 +623,7 @@ Gráfica 'grafica_precision.png' guardada.
 <img width="728" height="530" alt="image" src="https://github.com/user-attachments/assets/c6ef2729-d391-418f-a994-aa93ef8a41fd" />
 
 <img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
+
 
 
 
