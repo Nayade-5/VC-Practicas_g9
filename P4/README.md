@@ -359,6 +359,7 @@ Se obtiene el tamaño de la imagen y, si es demasiado grande, se redimensiona ma
 <img width="900" height="506" alt="imagen" src="https://github.com/user-attachments/assets/fca31434-4d21-4d0f-a7a2-48e51e41e1ab" />
 
 
+
 En esta parte del código, se compara el rendimiento de dos modelos de OCR diferentes: **EasyOCR** y **Tesseract**.
 
 El script procesa toda nuestra batería de imágenes de la carpeta "test" y, en lugar de mostrar ventanas, genera un archivo `comparativa_ocr.csv `que contiene todos los datos de la prueba.
@@ -657,6 +658,7 @@ El resultado muestra que, de las 50 imágenes analizadas de la carpeta test:
 * **EasyOCR** acertó 14 de 50 matriculas y tardó 3.85 segundos por imagen.
 * **Tessreact** acertó solo 2 matrículas y fue más rápido, con 2.37 segundos imagen.
 En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso.
+
 
 
 
