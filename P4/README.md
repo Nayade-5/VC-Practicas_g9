@@ -338,6 +338,9 @@ print("Ventana cerrada.")
 <img width="900" height="506" alt="imagen" src="https://github.com/user-attachments/assets/fca31434-4d21-4d0f-a7a2-48e51e41e1ab" />
 
 
+En esta parte del código, se compara el rendimiento de dos modelos de OCR diferentes: **EasyOCR** y **Tesseract**.
+
+El script procesa toda nuestra batería de imágenes de la carpeta "test" y, en lugar de mostrar ventanas, genera un archivo `comparativa_ocr.csv `que contiene todos los datos de la prueba
 ```py
 from ultralytics import YOLO
 import cv2
@@ -470,6 +473,10 @@ else:
     print(f"Resultados de la comparativa guardados en: {CSV_OUTPUT_FILE}")`
 ```
 
+
+
+
+
 ```py
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -571,6 +578,7 @@ Gráfica 'grafica_precision.png' guardada.
 <img width="728" height="530" alt="image" src="https://github.com/user-attachments/assets/c6ef2729-d391-418f-a994-aa93ef8a41fd" />
 
 <img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
+
 
 
 
