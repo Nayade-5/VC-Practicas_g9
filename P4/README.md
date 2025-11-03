@@ -519,8 +519,7 @@ Al final, el script verifica si `all_results` tiene datos.
 Si los hay, los convierte en un **DataFrame** con pandas y los guarda en `comparativa_ocr.csv`.
 Luego imprime que el **proceso ha terminado**.
 
-
-
+En esta sección del código, sirve para la visualización de los resultados de la comparativa de EasyOCR  y Tesseract.
 
 ```py
 import pandas as pd
@@ -604,6 +603,15 @@ else:
         plt.show()
 ```
 
+Primero, **carga de los datos** desde archivo `comparativa_ocr.csv`.
+A continuación, extrae la matricula real de cada imagen a partir del nombre del archivo, limpia los datos y normaliza.
+
+Luego, calcula las métricas principales; la tasa de acierto de cada OCR comparando el texto leído con la matricula real y el tiempo medio de interferencia de cada OCR.
+Después, imprime un resumen de los resultados en la consola mostrando cuántas imágenes se analizaron, la precisión de cada OCR y el tiempo promedio de lectura.
+
+Por último, genera y guarda dos gráficas; precisión de aciertos y tiempo medio de lectura.
+
+Estas gráficas permiten comparar visualmente el rendimiento de EasyOCR y Tesseract, y se guardan como imágenes (grafica_precision.png y grafica_tiempo.png) para futuras referencias.
 Generando 'matricula_real' automáticamente desde el nombre del archivo...
 Columna 'matricula_real' generada con éxito.
 
@@ -624,6 +632,10 @@ Gráfica 'grafica_precision.png' guardada.
 
 <img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
 
+El resultado muestra que, de las 50 imágenes analizadas de la carpeta test:
+* **EasyOCR** acertó 14 de 50 matriculas y tardó 3.85 segundos por imagen.
+* **Tessreact** acertó solo 2 matrículas y fue más rápido, con 2.37 segundos imagen.
+En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso.
 
 
 
