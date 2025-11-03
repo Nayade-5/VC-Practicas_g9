@@ -237,8 +237,7 @@ print(f"Total de detecciones de matrícula: {total_plates}")
 ```
 
 
-
-
+Esta sección del código detecta vehículos y lee matrículas en imágenes usando YOLO para la detección y EasyOCR para el reconocimiento de texto. Primero identifica los vehículos, luego localiza las placas y extrae su texto, mostrando toda la información sobre la imagen. Es útil para aplicaciones como control de tráfico o vigilancia.
 
 ```py
 from ultralytics import YOLO
@@ -249,7 +248,10 @@ import time
 vehicle_model = YOLO('yolo11n.pt')
 
 plate_model = YOLO('runs/detect/train5/weights/best.pt')
+```
+Usamos un modelo YOLO para detectar vehículos en la imagen y, posteriormente, un modelo preentrenado para localizar las placas de matrícula dentro de cada vehículo.
 
+```py
 
 try:
     reader_ocr = easyocr.Reader(['es', 'en'], gpu=True)
@@ -264,7 +266,11 @@ frame = cv2.imread("img/prueba4.jpg")
 if frame is None:
   print("No se pudo detectar la imagen")
   exit()
+```
 
+Se configura EasyOCR, intentando usar GPU si está disponible, y se carga la imagen. También se definen las clases de vehículos que se quieren detectar.
+
+```py
 resultados = vehicle_model(
   frame,
   classes=classes_to_detect,
@@ -289,7 +295,12 @@ if resultados[0].boxes is not None:
 
         img_vehiculo = frame[y1:y2, x1:x2]
         if img_vehiculo.size == 0: continue
+```
 
+El modelo YOLO detecta los vehículos en la imagen y, para cada uno, dibuja un rectángulo azul indicando su clase y nivel de confianza. Además, recorta la región del vehículo para poder procesarla posteriormente, omitiendo cualquier recorte vacío.
+
+
+```py
         results_placa = plate_model(img_vehiculo, conf=0.5, verbose=False)
 
         if results_placa[0].boxes is not None:
@@ -304,7 +315,11 @@ if resultados[0].boxes is not None:
 
                 img_placa_recortada = frame[abs_py1:abs_py2, abs_px1:abs_px2]
                 texto_matricula = ""
+```
 
+Se detecta la placa dentro del vehículo, se ajustan sus coordenadas a la imagen original, se recorta la placa y se prepara la variable para almacenar el texto leído por OCR.
+
+```py
                 if img_placa_recortada.size > 0:
                     ocr_results = reader_ocr.readtext(img_placa_recortada, detail=0, paragraph=True)
                     if ocr_results:
@@ -316,7 +331,11 @@ if resultados[0].boxes is not None:
 
                 label_final_placa = f"{texto_matricula} ({placa_conf:.2f})"
                 cv2.putText(frame, label_final_placa, (abs_px1, abs_py1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_placa, 2)
+```
 
+Si la placa recortada contiene datos, se aplica **OCR** para leer el texto de la matrícula. El resultado se convierte a mayúsculas y se limpia, dejando solo letras y números. A continuación, se dibuja un **rectángulo verde** alrededor de la placa y se muestra el texto detectado junto con su nivel de confianza sobre la imagen.
+
+```py
 frame_height, frame_width = frame.shape[:2]
 DISPLAY_WIDTH = 900
 if frame_width > DISPLAY_WIDTH:
@@ -334,6 +353,8 @@ cv2.waitKey(0)
 cv2.destroyAllWindows()
 print("Ventana cerrada.")
 ```
+
+Se obtiene el tamaño de la imagen y, si es demasiado grande, se redimensiona manteniendo la proporción para facilitar su visualización. Luego, se guarda la imagen final con todas las detecciones y se muestra en una ventana. La ventana permanecerá abierta hasta que se presione cualquier tecla, momento en el que se cierra.
 
 <img width="900" height="506" alt="imagen" src="https://github.com/user-attachments/assets/fca31434-4d21-4d0f-a7a2-48e51e41e1ab" />
 
@@ -636,6 +657,7 @@ El resultado muestra que, de las 50 imágenes analizadas de la carpeta test:
 * **EasyOCR** acertó 14 de 50 matriculas y tardó 3.85 segundos por imagen.
 * **Tessreact** acertó solo 2 matrículas y fue más rápido, con 2.37 segundos imagen.
 En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso.
+
 
 
 
