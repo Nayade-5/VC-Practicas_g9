@@ -1,0 +1,511 @@
+```py
+from ultralytics import YOLO
+
+model = YOLO('yolo11n.pt')
+
+results = model.train(
+data="data.yaml",
+epochs=100,
+imgsz=640,
+batch=4,
+patience=50,
+device=0
+)
+```
+
+```py
+from ultralytics import YOLO
+import cv2
+import csv
+import easyocr
+
+print("Cargando modelos en GPU...")
+vehicle_model = YOLO('yolo11n.pt').to('cuda:0')
+plate_model = YOLO('runs/detect/train5/weights/best.pt').to('cuda:0')
+
+try:
+    reader_ocr = easyocr.Reader(['es', 'en'], gpu=True)
+    print("EasyOCR cargado en GPU.")
+except Exception as e:
+    print(f"No se pudo cargar EasyOCR en GPU ({e}), cargando en CPU...")
+    reader_ocr = easyocr.Reader(['es', 'en'], gpu=False)
+    print("EasyOCR cargado en CPU.")
+
+
+vid_route = "./C0142.mp4"
+video_out_path = "./results/resultado_practica2.mp4"
+csv_out_path = "./results/resultado_practica2.csv"
+csv_data = []
+
+# 0: persona, 2: coche, 5: bus, 7: camión
+classes_to_detect = [0, 2, 5, 7]
+
+cap = cv2.VideoCapture(vid_route)
+if not cap.isOpened():
+    print(f"Error: No se pudo abrir el video '{vid_route}'")
+    exit()
+
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+DISPLAY_WIDTH = 1280
+aspect_ratio = frame_height / frame_width
+DISPLAY_HEIGHT = int(DISPLAY_WIDTH * aspect_ratio)
+
+fps = int(cap.get(cv2.CAP_PROP_FPS))
+fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+out_video = cv2.VideoWriter(video_out_path, fourcc, fps, (frame_width, frame_height))
+
+frame_number = 0
+total_vehicles = set()
+total_people = set()
+total_plates = 0
+
+# Listas para el procesamiento por lotes
+vehicle_rois = []
+vehicle_data_batch = []
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("THE END")
+        break
+
+    frame_number += 1
+
+    # Limpiamos las listas en cada fotograma
+    vehicle_rois.clear()
+    vehicle_data_batch.clear()
+
+    resultados = vehicle_model.track(
+      frame,
+      classes=classes_to_detect,
+      imgsz=640,
+      conf=0.6,
+      verbose=False,
+      device=0,  # Forzar GPU
+      persist=True # Mantener el seguimiento entre fotogramas
+    )
+
+
+    if resultados[0].boxes.id is not None:
+        for i, box in enumerate(resultados[0].boxes):
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            cls = int(box.cls[0])
+            obj_type = vehicle_model.names[cls]
+            conf = float(box.conf[0])
+            track_id = int(resultados[0].boxes.id[i])
+
+            csv_row = [frame_number, obj_type, conf, track_id, x1, y1, x2, y2, '', '', '', '', '', '', '']
+
+            if obj_type == "person":
+                total_people.add(track_id)
+
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                label = f'P: {track_id}'
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                csv_data.append(csv_row)
+
+            elif obj_type in ["car", "bus", "truck"]:
+                total_vehicles.add(track_id)
+
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                label = f'V: {track_id}'
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+
+                img_vehiculo = frame[y1:y2, x1:x2]
+                if img_vehiculo.size > 0:
+                    vehicle_rois.append(img_vehiculo)
+                    vehicle_data_batch.append((csv_row, (x1, y1)))
+
+    if vehicle_rois:
+        results_plates = plate_model.track(
+            vehicle_rois,
+            conf=0.6,
+            imgsz=320,
+            verbose=False,
+            device=0,
+            persist=True
+        )
+
+        for i, result_plate in enumerate(results_plates):
+            csv_row, (x1_v, y1_v) = vehicle_data_batch[i]
+
+            if result_plate.boxes is not None:
+                for box_placa in result_plate.boxes:
+
+                    total_plates += 1
+
+                    px1, py1, px2, py2 = map(int, box_placa.xyxy[0])
+                    placa_conf = float(box_placa.conf[0])
+
+                    abs_px1 = px1 + x1_v
+                    abs_py1 = py1 + y1_v
+                    abs_px2 = px2 + x1_v
+                    abs_py2 = py2 + y1_v
+
+                    # OCR
+                    img_placa_recortada = frame[abs_py1:abs_py2, abs_px1:abs_px2]
+                    texto_matricula = ""
+                    if img_placa_recortada.size > 0:
+                        ocr_results = reader_ocr.readtext(img_placa_recortada, detail=0, paragraph=True)
+                        if ocr_results:
+                            texto_matricula = "".join(ocr_results).upper()
+                            texto_matricula = "".join(filter(str.isalnum, texto_matricula))
+
+
+                    color_placa = (0, 255, 0)
+                    cv2.rectangle(frame, (abs_px1, abs_py1), (abs_px2, abs_py2), color_placa, 2)
+                    label_placa = f"{texto_matricula} ({placa_conf:.2f})"
+                    cv2.putText(frame, label_placa, (abs_px1, abs_py1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_placa, 2)
+
+                    csv_row[8] = 'matricula'
+                    csv_row[9] = placa_conf
+                    csv_row[10] = abs_px1
+                    csv_row[11] = abs_py1
+                    csv_row[12] = abs_px2
+                    csv_row[13] = abs_py2
+                    csv_row[14] = texto_matricula
+                    break
+
+            csv_data.append(csv_row)
+
+    out_video.write(frame)
+
+    display_frame = cv2.resize(frame, (DISPLAY_WIDTH, DISPLAY_HEIGHT), interpolation=cv2.INTER_AREA)
+    cv2.imshow("Prototipo Final (Pipeline de 2 Modelos)", display_frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+out_video.release()
+cv2.destroyAllWindows()
+
+header = ['fotograma', 'tipo_objeto', 'confianza', 'identificador_tracking',
+          'x1', 'y1', 'x2', 'y2', 'matrícula_en_su_caso', 'confianza_matricula',
+          'mx1', 'my1', 'mx2', 'my2', 'texto_matricula']
+
+try:
+    with open(csv_out_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(csv_data)
+    print(f"\nDatos CSV guardados exitosamente en {csv_out_path}")
+except PermissionError:
+    print(f"\nError: Permiso denegado. No se pudo escribir en {csv_out_path}.")
+
+print(f"Vídeo de salida guardado en {video_out_path}")
+print(f"Procesamiento finalizado.")
+print(f"Total de personas únicas: {len(total_people)}")
+print(f"Total de vehículos únicos: {len(total_vehicles)}")
+print(f"Total de detecciones de matrícula: {total_plates}")
+```
+
+```py
+from ultralytics import YOLO
+import cv2
+import easyocr
+import time
+
+vehicle_model = YOLO('yolo11n.pt')
+
+plate_model = YOLO('runs/detect/train5/weights/best.pt')
+
+
+try:
+    reader_ocr = easyocr.Reader(['es', 'en'], gpu=True)
+    print("EasyOCR cargado en GPU.")
+except:
+    reader_ocr = easyocr.Reader(['es', 'en'], gpu=False)
+    print("EasyOCR cargado en CPU.")
+
+classes_to_detect = [0, 2, 5, 7]
+
+frame = cv2.imread("img/prueba4.jpg")
+if frame is None:
+  print("No se pudo detectar la imagen")
+  exit()
+
+resultados = vehicle_model(
+  frame,
+  classes=classes_to_detect,
+  conf=0.4,
+  verbose=False
+)
+
+detection_count = 0
+
+if resultados[0].boxes is not None:
+    for box in resultados[0].boxes:
+        detection_count += 1
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        cls = int(box.cls[0])
+        currentClass = vehicle_model.names[cls]
+        confidence = box.conf[0]
+
+        color_vehiculo = (255, 0, 0)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), color_vehiculo, 2)
+        label = f'{currentClass} {confidence:.2f}'
+        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_vehiculo, 2)
+
+        img_vehiculo = frame[y1:y2, x1:x2]
+        if img_vehiculo.size == 0: continue
+
+        results_placa = plate_model(img_vehiculo, conf=0.5, verbose=False)
+
+        if results_placa[0].boxes is not None:
+            for box_placa in results_placa[0].boxes:
+                px1, py1, px2, py2 = map(int, box_placa.xyxy[0])
+                placa_conf = box_placa.conf[0]
+
+                abs_px1 = px1 + x1
+                abs_py1 = py1 + y1
+                abs_px2 = px2 + x1
+                abs_py2 = py2 + y1
+
+                img_placa_recortada = frame[abs_py1:abs_py2, abs_px1:abs_px2]
+                texto_matricula = ""
+
+                if img_placa_recortada.size > 0:
+                    ocr_results = reader_ocr.readtext(img_placa_recortada, detail=0, paragraph=True)
+                    if ocr_results:
+                        texto_matricula = "".join(ocr_results).upper()
+                        texto_matricula = "".join(filter(str.isalnum, texto_matricula))
+
+                color_placa = (0, 255, 0)
+                cv2.rectangle(frame, (abs_px1, abs_py1), (abs_px2, abs_py2), color_placa, 2)
+
+                label_final_placa = f"{texto_matricula} ({placa_conf:.2f})"
+                cv2.putText(frame, label_final_placa, (abs_px1, abs_py1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color_placa, 2)
+
+frame_height, frame_width = frame.shape[:2]
+DISPLAY_WIDTH = 900
+if frame_width > DISPLAY_WIDTH:
+    aspect_ratio = frame_height / frame_width
+    DISPLAY_HEIGHT = int(DISPLAY_WIDTH * aspect_ratio)
+    display_frame = cv2.resize(frame, (DISPLAY_WIDTH, DISPLAY_HEIGHT), interpolation=cv2.INTER_AREA)
+else:
+    display_frame = frame
+
+cv2.imwrite("resultado.png", display_frame)
+print("Imagen procesada guardada como resultado.png")
+cv2.imshow("Deteccion en Imagen (Vehiculos y Matriculas)", display_frame)
+print("Presiona cualquier tecla para cerrar la ventana.")
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+print("Ventana cerrada.")
+```
+
+```py
+from ultralytics import YOLO
+import cv2
+import easyocr
+import pytesseract
+import time
+import pandas as pd
+import os
+
+try:
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+except FileNotFoundError:
+    print("Aviso: Tesseract no se encontró en 'C:\\Program Files\\Tesseract-OCR\\'.")
+    print("Asegúrate de que esté instalado y/o en el PATH.")
+
+vehicle_model = YOLO('yolo11n.pt')
+
+try:
+    plate_model = YOLO('runs/detect/train3/weights/best.pt')
+except FileNotFoundError:
+    print("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print("ERROR: No se encontró el archivo 'runs/detect/train3/weights/best.pt'")
+    print("Por favor, pon la ruta correcta a tu modelo de matrículas entrenado.")
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+    exit()
+
+print("Forzando carga de EasyOCR en CPU.")
+reader_ocr = easyocr.Reader(['es', 'en'], gpu=False)
+# ------------------------------------------
+
+classes_to_detect = [0, 2, 5, 7]
+
+IMAGE_FOLDER_PATH = "matriculas/test/images"
+CSV_OUTPUT_FILE = "comparativa_ocr.csv"
+
+
+all_results = []
+
+print(f"Iniciando comparativa en la carpeta: {IMAGE_FOLDER_PATH}...")
+
+
+if not os.path.exists(IMAGE_FOLDER_PATH):
+    print(f"ERROR: La carpeta de imágenes no existe: {IMAGE_FOLDER_PATH}")
+    exit()
+
+for image_name in os.listdir(IMAGE_FOLDER_PATH):
+    # Asegurarse de que solo procesamos imágenes
+    if not image_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+        continue
+
+    image_path = os.path.join(IMAGE_FOLDER_PATH, image_name)
+    frame = cv2.imread(image_path)
+
+    if frame is None:
+        print(f"Advertencia: No se pudo leer la imagen {image_path}. Saltando.")
+        continue
+
+    print(f"Procesando: {image_name}")
+
+    resultados = vehicle_model(
+        frame,
+        classes=classes_to_detect,
+        conf=0.4,
+        verbose=False
+    )
+
+    if resultados[0].boxes is not None:
+        for box in resultados[0].boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+            img_vehiculo = frame[y1:y2, x1:x2]
+            if img_vehiculo.size == 0: continue
+
+            results_placa = plate_model(img_vehiculo, conf=0.5, verbose=False)
+
+            if results_placa[0].boxes is not None:
+                for box_placa in results_placa[0].boxes:
+
+                    px1, py1, px2, py2 = map(int, box_placa.xyxy[0])
+                    placa_conf = float(box_placa.conf[0])
+
+                    abs_px1 = px1 + x1
+                    abs_py1 = py1 + y1
+                    abs_px2 = px2 + x1
+                    abs_py2 = py2 + y1
+
+                    img_placa_recortada = frame[abs_py1:abs_py2, abs_px1:abs_px2]
+
+                    texto_easyocr = ""
+                    tiempo_easyocr = 0.0
+                    texto_tesseract = ""
+                    tiempo_tesseract = 0.0
+
+                    if img_placa_recortada.size > 0:
+
+                        start_time = time.time()
+                        ocr_results = reader_ocr.readtext(img_placa_recortada, detail=0, paragraph=True)
+                        tiempo_easyocr = time.time() - start_time
+                        if ocr_results:
+                            texto_easyocr = "".join(ocr_results).upper()
+                            texto_easyocr = "".join(filter(str.isalnum, texto_easyocr))
+
+                        gray_placa = cv2.cvtColor(img_placa_recortada, cv2.COLOR_BGR2GRAY)
+                        _, th_placa = cv2.threshold(gray_placa, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+                        start_time = time.time()
+                        config = '--psm 8 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                        texto_tesseract = pytesseract.image_to_string(th_placa, config=config)
+                        tiempo_tesseract = time.time() - start_time
+                        texto_tesseract = "".join(filter(str.isalnum, texto_tesseract.strip()))
+
+
+                    all_results.append({
+                        'imagen': image_name,
+                        'conf_matricula': placa_conf,
+                        'texto_easyocr': texto_easyocr,
+                        'tiempo_easyocr': tiempo_easyocr,
+                        'texto_tesseract': texto_tesseract,
+                        'tiempo_tesseract': tiempo_tesseract
+                    })
+
+                    break
+
+if not all_results:
+    print("\nAdvertencia: No se detectó ninguna matrícula en ninguna imagen. El archivo CSV estará vacío.")
+else:
+    df = pd.DataFrame(all_results)
+    df.to_csv(CSV_OUTPUT_FILE, index=False, encoding='utf-8')
+    print(f"\n¡Proceso completado!")
+    print(f"Resultados de la comparativa guardados en: {CSV_OUTPUT_FILE}")`
+```
+
+```py
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+
+csv_file = 'comparativa_ocr.csv'
+if not os.path.exists(csv_file):
+    print(f"ERROR: No se encontró el archivo '{csv_file}'.")
+else:
+    df = pd.read_csv(csv_file)
+
+    try:
+        print("Generando 'matricula_real' automáticamente desde el nombre del archivo...")
+
+        df['matricula_real'] = df['imagen'].str.split('[_\.]').str[0]
+        print("Columna 'matricula_real' generada con éxito.")
+    except Exception as e:
+        print(f"Error generando la matrícula real: {e}")
+        print("Asegúrate de que los nombres de archivo sean correctos.")
+        exit()
+
+    df['matricula_real'] = df['matricula_real'].fillna('').astype(str)
+    df['texto_easyocr'] = df['texto_easyocr'].fillna('').astype(str)
+    df['texto_tesseract'] = df['texto_tesseract'].fillna('').astype(str)
+
+
+    df['matricula_real'] = df['matricula_real'].str.strip().str.upper()
+    df['texto_easyocr'] = df['texto_easyocr'].str.strip().str.upper()
+    df['texto_tesseract'] = df['texto_tesseract'].str.strip().str.upper()
+
+    df_valid = df[df['matricula_real'] != '']
+
+    aciertos_easyocr = (df_valid['texto_easyocr'] == df_valid['matricula_real']).sum()
+    aciertos_tesseract = (df_valid['texto_tesseract'] == df_valid['matricula_real']).sum()
+    total_imagenes = len(df_valid)
+
+    if total_imagenes == 0:
+        print("ERROR: No se pudo extraer ninguna matrícula real de los nombres de archivo.")
+    else:
+        tasa_easyocr = (aciertos_easyocr / total_imagenes) * 100
+        tasa_tesseract = (aciertos_tesseract / total_imagenes) * 100
+
+        tiempo_easyocr = df['tiempo_easyocr'].mean()
+        tiempo_tesseract = df['tiempo_tesseract'].mean()
+
+        print("\n--- CONCLUSIONES DE LA COMPARATIVA ---")
+        print(f"Base de datos: {total_imagenes} imágenes analizadas")
+        print("----------------------------------------")
+        print("[Tasa de Acierto (Precisión)]")
+        print(f"  EasyOCR:   {tasa_easyocr:.2f}% ({aciertos_easyocr} de {total_imagenes})")
+        print(f"  Tesseract: {tasa_tesseract:.2f}% ({aciertos_tesseract} de {total_imagenes})")
+        print("\n[Tiempo de Inferencia Medio (CPU)]")
+        print(f"  EasyOCR:   {tiempo_easyocr:.4f} segundos")
+        print(f"  Tesseract: {tiempo_tesseract:.4f} segundos")
+        print("----------------------------------------")
+
+        modelos = ['EasyOCR', 'Tesseract']
+        tasas = [tasa_easyocr, tasa_tesseract]
+
+        plt.figure(figsize=(7, 5))
+        plt.bar(modelos, tasas, color=['blue', 'orange'])
+        plt.title('Comparativa de Precisión (Tasa de Acierto)')
+        plt.ylabel('Tasa de Acierto (%)')
+        plt.ylim(0, 100)
+
+        plt.savefig('grafica_precision.png')
+        print("\nGráfica 'grafica_precision.png' guardada.")
+        plt.show()
+
+        tiempos = [tiempo_easyocr, tiempo_tesseract]
+
+        plt.figure(figsize=(7, 5))
+        plt.bar(modelos, tiempos, color=['blue', 'orange'])
+        plt.title('Comparativa de Velocidad (Tiempo Medio)')
+        plt.ylabel('Tiempo (segundos)')
+
+        plt.savefig('grafica_tiempo.png')
+        print("Gráfica 'grafica_tiempo.png' guardada.")
+        plt.show()
+```
