@@ -11,12 +11,17 @@ En este proyecto, entrenamos un detector de matrículas personalizado usando un 
 - Validación 16%
 - Test 20%
 
-Para repartir las imágenes del sistema de ficheros usamos un script de python llamado `division_archivos.py`. Al tratarse de una automatización rápida, hicimos uso de la IA de google Gemini para que nos asisitiera en la creación del script con breves modificaciones.
+Para repartir las imágenes del sistema de ficheros usamos un script de Python llamado `division_archivos.py`. Al tratarse de una automatización rápida, hicimos uso de la IA de Google Gemini para que nos asisitiera en la creación del script con breves modificaciones.
 
-A su vez, al etiquetar las imágenes usando `LabelMe`, el script mencionado arriba tuvo el apoyo de otro script `json_a_txt.py` para traducir las anotaciones de LabelMe de cada imagen a un txt legible por el modelo, acompañado de su correspondiente imagen.
+A su vez, al etiquetar las imágenes usando `LabelMe`, el script mencionado arriba tuvo el apoyo de otro script `json_a_txt.py` para traducir las anotaciones de `LabelMe` de cada imagen a un **archivo .TXT** legible por el modelo, acompañado de su correspondiente imagen.
 
 Esto no solo agilizó el proceso si no que lo hizo más sostenible a la hora de añadir nuevas imágenes al dataset.
-Estos scripts se pueden consultar en P4\division_archivos.py y P4\json_a_txt.py.
+Estos scripts se pueden consultar en:
+
+- [Script para división de archivos](./division_archivos.py)
+
+- [Script para conversión de JSON a TXT](./json_a_txt.py)
+
 
 
 La técnica usada en el entrenamiento es aprendizaje por transferencia. En lugar de empezar desde cero, tomamos el modelo YOLO, que sabe identificar objetos comunes y lo re-entrenamos con nuestro dataset.
@@ -60,23 +65,23 @@ device=0
 ```
 El entrenamiento del modelo de detección de matrículas se completó con éxito tras 100 épocas, validándose con 109 imágenes.
 
-Los resultados fueron excelentes: el modelo alcanzó una Precisión (P) del 99.1% (casi no da falsos positivos) y un Recall (R) del 94.7% (encuentra la gran mayoría de matrículas).
+Los resultados fueron excelentes: el modelo alcanzó una **Precisión (P) del 99.1% (casi no da falsos positivos) y un Recall (R) del 94.7% (encuentra la gran mayoría de matrículas).**
 
-La nota de rendimiento principal (mAP50) fue de 96.7%, y la métrica más estricta (mAP50-95) alcanzó un 81.8%. Estos resultados confirman que el modelo es altamente preciso y fiable para localizar matrículas con gran exactitud.
+La nota de rendimiento principal **(mAP50) fue de 96.7%**, y la métrica más estricta (mAP50-95) alcanzó un 81.8%. Estos resultados confirman que el modelo es altamente preciso y fiable para localizar matrículas con gran exactitud.
 
 A continuación podemos apreciar los resultados gráficos del entrenamiento:
 
 ![Resultados entrenamiento](results.png)
 
 ### Pipeline
-Este script de Python implementa un pipeline completo para el análisis de vídeos de tráfico y de 'cosecha propia'. El objetivo es detectar vehículos y localizar sus matrículas.
+Este script de Python implementa un **Pipeline** completo para el análisis de vídeos de tráfico y de 'cosecha propia'. El objetivo es detectar vehículos y localizar sus matrículas.
 
 El proceso completo genera dos artefactos principales: un vídeo de salida con las detecciones visualizadas y un archivo CSV con el volcado de todos los datos detectados, frame a frame.
 
-El núcleo del script es un pipeline de dos modelos YOLO que funcionan en cascada.
+El núcleo del script es el **Pipeline** de dos modelos YOLO que funcionan en cascada.
 
-- El modelo YOLO base para detectar los vehículos
-- El modelo YOLO entrenado para detectar las matrículas de dichos vehículos.
+- El modelo YOLO base para detectar los *vehículos*
+- El modelo YOLO entrenado para detectar las *matrículas de dichos vehículos*.
 
 #### Configuración y carga de dependencias
 
@@ -120,9 +125,11 @@ classes_to_detect = [0, 2, 5, 7]
 
 ```
 
-Se utiliza cv2.VideoCapture para leer el archivo de vídeo frame a frame.
+Se utiliza `cv2.VideoCapture()` para leer el archivo de vídeo frame a frame.
 
-Paralelamente, se configura un cv2.VideoWriter que se usará para escribir cada frame procesado en un nuevo archivo de vídeo (resultado_practica2.mp4). Es crucial que el writer se inicialice con las mismas propiedades (FPS, ancho y alto) que el vídeo original para evitar una salida corrupta.
+Paralelamente, se configura:
+- `cv2.VideoWriter()` que se usará para escribir cada frame procesado en un nuevo archivo de vídeo ([Resultado nº1](./results/resultado_practica.mp4)).
+Es crucial que el writer se inicialice con las mismas propiedades (FPS, ancho y alto) que el vídeo original para evitar una salida corrupta.
 
 ```py
 
@@ -157,9 +164,13 @@ vehicle_rois = []
 vehicle_data_batch = []
 ```
 
-Contadores: Se inicializan las variables para llevar la cuenta de lo que se procesa. frame_number cuenta los fotogramas. total_vehicles y total_people usan un set() para contar solo los IDs únicos de vehículos y personas (evitando contarlos en cada fotograma). total_plates es un contador simple de cuántas veces se detecta una matrícula.
+Contadores: Se inicializan las variables para llevar la cuenta de lo que se procesa.
+- `frame_number:` cuenta los fotogramas.
+- `total_vehicles` y total_people usan un set() para contar solo los IDs únicos de vehículos y personas (evitando contarlos en cada fotograma).
+- `total_plates` es un contador simple de cuántas veces se detecta una matrícula.
 
-Lotes: vehicle_rois y vehicle_data_batch son listas clave para optimizar. En lugar de ejecutar el modelo de matrículas en cada coche uno por uno, se guarda aquí todos los recortes de los coches de un fotograma y los procesará todos juntos al final.
+Lotes: 
+- `vehicle_rois` y `vehicle_data_batch` son listas clave para optimizar. En lugar de ejecutar el modelo de matrículas en cada coche uno por uno, se guardan aquí todos los recortes de los coches de un fotograma y los procesará todos juntos al final.
 
 Comenzamos el bucle mientras existan fotogramas y limpiamos las listas en cada uno de ellos.
 
@@ -328,9 +339,15 @@ print(f"Total de detecciones de matrícula: {total_plates}")
 ```
 Cada fotograma procesado se guarda en el video de salida y se muestra en pantalla. Al finalizar, se liberan los recursos y se genera un CSV con toda la información de objetos y matrículas detectadas. Finalmente, se imprime un resumen con el total de personas, vehículos y matrículas, y se confirma que el video y el CSV se han guardado correctamente.
 
+[Ejemplo de resumen](./results/resultado_practica.csv)
+
+
+
 <img width="1048" height="561" alt="imagen" src="https://github.com/user-attachments/assets/6fd75aa1-77d3-44dc-8358-578e76309711" />
 
-Esta sección del código detecta vehículos y lee matrículas en imágenes usando YOLO para la detección y EasyOCR para el reconocimiento de texto. Primero identifica los vehículos, luego localiza las placas y extrae su texto, mostrando toda la información sobre la imagen. Es útil para aplicaciones como control de tráfico o vigilancia.
+
+### Detección concretamente en un único fotograma(en vez de vídeo)
+Esta sección del código detecta vehículos y lee matrículas en imágenes usando **YOLO** para la detección y **EasyOCR** para el reconocimiento de texto. Primero identifica los vehículos, luego localiza las placas y extrae su texto, mostrando toda la información sobre la imagen.
 
 ```py
 from ultralytics import YOLO
@@ -342,7 +359,7 @@ vehicle_model = YOLO('yolo11n.pt')
 
 plate_model = YOLO('runs/detect/train5/weights/best.pt')
 ```
-Usamos un modelo YOLO para detectar vehículos en la imagen y, posteriormente, un modelo preentrenado para localizar las placas de matrícula dentro de cada vehículo.
+Usamos un modelo **YOLO** para detectar vehículos en la imagen y, posteriormente, un modelo preentrenado para localizar las placas de matrícula dentro de cada vehículo. Como hicimos ya anteriormente.
 
 ```py
 
@@ -361,7 +378,7 @@ if frame is None:
   exit()
 ```
 
-Se configura EasyOCR, intentando usar GPU si está disponible, y se carga la imagen. También se definen las clases de vehículos que se quieren detectar.
+Se configura **EasyOCR**, intentando usar **GPU** si está disponible, y se carga la imagen. También se definen las clases de vehículos que se quieren detectar.
 
 ```py
 resultados = vehicle_model(
@@ -410,7 +427,7 @@ El modelo YOLO detecta los vehículos en la imagen y, para cada uno, dibuja un r
                 texto_matricula = ""
 ```
 
-Se detecta la placa dentro del vehículo, se ajustan sus coordenadas a la imagen original, se recorta la placa y se prepara la variable para almacenar el texto leído por OCR.
+Se detecta la placa dentro del vehículo, se ajustan sus coordenadas a la imagen original, se recorta la placa y se prepara la variable para almacenar el texto leído por **OCR**.
 
 ```py
                 if img_placa_recortada.size > 0:
@@ -455,7 +472,7 @@ Se obtiene el tamaño de la imagen y, si es demasiado grande, se redimensiona ma
 
 En esta parte del código, se compara el rendimiento de dos modelos de OCR diferentes: **EasyOCR** y **Tesseract**.
 
-El script procesa toda nuestra batería de imágenes de la carpeta "test" y, en lugar de mostrar ventanas, genera un archivo `comparativa_ocr.csv `que contiene todos los datos de la prueba.
+El script procesa toda nuestra batería de imágenes de la carpeta "test" y, en lugar de mostrar ventanas, genera un archivo [Comparativa](./results/comparativa_ocr.csv) que contiene todos los datos de la prueba.
 
 ```py
 from ultralytics import YOLO
@@ -535,7 +552,7 @@ for image_name in os.listdir(IMAGE_FOLDER_PATH):
 ```
 Se recorre la carpeta y se procesan solo los archivos de imagen válidos, ignorando cualquier otro tipo de archivo.
 
-Luego se intenta leer la imagen con OpenCV (cv2.imread).
+Luego se intenta leer la imagen con OpenCV (`cv2.imread`).
 Si no se puede abrir, se muestra una advertencia y se pasa a la siguiente.
 
 ```py
@@ -567,7 +584,7 @@ Si no se puede abrir, se muestra una advertencia y se pasa a la siguiente.
                     abs_py2 = py2 + y1
 ```
 YOLO detecta vehículos en la imagen con una confianza mínima del 40%.
-Por cada vehículo detectado, se recorta la zona correspondiente y se usa el modelo de matrículas (plate_model) para buscar la placa dentro del vehículo.
+Por cada vehículo detectado, se recorta la zona correspondiente y se usa el modelo de matrículas (`plate_model`) para buscar la placa dentro del vehículo.
 
 ```py
                     img_placa_recortada = frame[abs_py1:abs_py2, abs_px1:abs_px2]
@@ -718,7 +735,7 @@ else:
         plt.show()
 ```
 
-Primero, **carga de los datos** desde archivo `comparativa_ocr.csv`.
+Primero, **carga de los datos** desde archivo [Comparativa](./results/comparativa_ocr.csv) .
 A continuación, extrae la matricula real de cada imagen a partir del nombre del archivo, limpia los datos y normaliza.
 
 Luego, calcula las métricas principales; la tasa de acierto de cada OCR comparando el texto leído con la matricula real y el tiempo medio de interferencia de cada OCR.
@@ -726,9 +743,9 @@ Después, imprime un resumen de los resultados en la consola mostrando cuántas 
 
 Por último, genera y guarda dos gráficas; precisión de aciertos y tiempo medio de lectura.
 
-Estas gráficas permiten comparar visualmente el rendimiento de EasyOCR y Tesseract, y se guardan como imágenes (grafica_precision.png y grafica_tiempo.png) para futuras referencias.
+Estas gráficas permiten comparar visualmente el **rendimiento de EasyOCR y Tesseract**, y se guardan como imágenes ([Grafica Tiempo](./results/grafica_tiempo.png)  y [Grafica Precision](./results/grafica_precision.png) ) para futuras referencias.
 
-Columna 'matricula_real' generada con éxito.
+Columna `matricula_real` generada con éxito.
 
 --- CONCLUSIONES DE LA COMPARATIVA ---
 Base de datos: 102 imágenes analizadas
@@ -749,9 +766,10 @@ Gráfica 'grafica_precision.png' guardada.
 ![Gráfica Tiempo](results/grafica_tiempo.png)
 
 El resultado muestra que, de las 102 imágenes analizadas de la carpeta test:
-* **EasyOCR** acertó 45 de 102 matriculas y tardó 0.5561 segundos por imagen.
-* **Tessreact** acertó solo 6 matrículas y fue más rápido, con 0.1324 segundos por imagen.
+* **EasyOCR** acertó **45 de 102 matriculas** y tardó **0.5561 segundos** por imagen.
+* **Tesseract** acertó solo **6 matrículas** y fue más rápido, con **0.1324 segundos** por imagen.
 En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso. Si se busca una opción más fiable pero más lenta incluso que estos dos modelos, convendría el uso de un VLM como se menciona en el README de la práctica.
+
 
 
 
