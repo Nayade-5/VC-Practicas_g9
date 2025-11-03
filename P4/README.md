@@ -1,3 +1,8 @@
+
+Para este proyecto, entrenamos un detector de matrículas personalizado usando un conjunto de datos de "cosecha propia". Todas las imágenes fueron recopiladas y etiquetadas manualmente por nosotros, asegurando que se ajustan a nuestro objetivo.
+
+La técnica usada es aprendizaje por transferencia. En lugar de empezar desde cero, tomamos el modelo YOLO, que sabe identificar objetos comunes y lo re-entrenamos con nuestro dataset.
+
 ```py
 from ultralytics import YOLO
 
@@ -12,6 +17,11 @@ patience=50,
 device=0
 )
 ```
+* **epochs = 100:** El modelo "estudió" nuestro dataset 100 veces.
+* **imgsz = 640:** Las imagenes se redimensionarion a 640 x 640 píxeles.
+* **batch = 4:** El modelo aprendió en lotes de 4 imágenes a la vez.
+*  **patience = 50:** El entrenamiento se detuvo automáticamente si el modelo dejaba de mejorar durante 50 épocas seguidas.
+*  **device = 0:** El entrenamiento se ejecutó en la **GPU** para máxima velocidad.
 ```
       Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
      98/100     0.777G     0.5494     0.3358     0.8266          3        640: 100% ━━━━━━━━━━━━ 110/110 10.2it/s 10.8s0.2s
@@ -222,6 +232,10 @@ print(f"Total de personas únicas: {len(total_people)}")
 print(f"Total de vehículos únicos: {len(total_vehicles)}")
 print(f"Total de detecciones de matrícula: {total_plates}")
 ```
+
+
+
+
 
 ```py
 from ultralytics import YOLO
@@ -554,5 +568,6 @@ Gráfica 'grafica_precision.png' guardada.
 <img width="728" height="530" alt="image" src="https://github.com/user-attachments/assets/c6ef2729-d391-418f-a994-aa93ef8a41fd" />
 
 <img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
+
 
 
