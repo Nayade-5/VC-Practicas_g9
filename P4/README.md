@@ -39,9 +39,12 @@ device=0
                    all        109        114      0.991      0.947      0.967      0.818
 
 100 epochs completed in 0.344 hours.
-Optimizer stripped from D:\EII\VC-Practica-1-\P4\runs\detect\train5\weights\last.pt, 5.5MB
-Optimizer stripped from D:\EII\VC-Practica-1-\P4\runs\detect\train5\weights\best.pt, 5.5MB
 ```
+El entrenamiento del modelo de detección de matrículas se completó con éxito tras 100 épocas, validándose con 109 imágenes.
+
+Los resultados fueron excelentes: el modelo alcanzó una Precisión (P) del 99.1% (casi no da falsos positivos) y un Recall (R) del 94.7% (encuentra la gran mayoría de matrículas).
+
+La nota de rendimiento principal (mAP50) fue de 96.7%, y la métrica más estricta (mAP50-95) alcanzó un 81.8%. Estos resultados confirman que el modelo es altamente preciso y fiable para localizar matrículas con gran exactitud.
 
 <img width="1048" height="561" alt="imagen" src="https://github.com/user-attachments/assets/6fd75aa1-77d3-44dc-8358-578e76309711" />
 
@@ -568,6 +571,7 @@ Gráfica 'grafica_precision.png' guardada.
 <img width="728" height="530" alt="image" src="https://github.com/user-attachments/assets/c6ef2729-d391-418f-a994-aa93ef8a41fd" />
 
 <img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
+
 
 
 
