@@ -3,16 +3,10 @@ import shutil
 import random
 import glob
 
-# --- 1. CONFIGURACIÓN ---
-# Debes ajustar estas rutas según tu proyecto
-
-# Ruta a la carpeta que contiene TODAS tus imágenes originales
 SOURCE_IMAGES_DIR = "D:\EII\plates" 
 
-# Ruta a la carpeta que contiene TODOS tus labels (.txt) originales
 SOURCE_LABELS_DIR = "D:\EII\plates\\txt" 
 
-# Carpeta de salida donde se creará la estructura train/val/test
 OUTPUT_DIR = "matriculas" 
 
 # Proporciones de reparto (basado en la práctica)
