@@ -1,5 +1,12 @@
+## Practica 4
+Grupo 9
 
-Para este proyecto, entrenamos un detector de matrículas personalizado usando un conjunto de datos de "cosecha propia". Todas las imágenes fueron recopiladas y etiquetadas manualmente por nosotros, asegurando que se ajustan a nuestro objetivo.
+- David Suárez Martel
+- Náyade García Torres
+
+
+### Entrenamiento
+En este proyecto, entrenamos un detector de matrículas personalizado usando un conjunto de datos de "cosecha propia". Todas las imágenes fueron recopiladas y etiquetadas manualmente por nosotros, asegurando que se ajustan a nuestro objetivo.
 
 La técnica usada es aprendizaje por transferencia. En lugar de empezar desde cero, tomamos el modelo YOLO, que sabe identificar objetos comunes y lo re-entrenamos con nuestro dataset.
 
@@ -48,6 +55,22 @@ La nota de rendimiento principal (mAP50) fue de 96.7%, y la métrica más estric
 
 <img width="1048" height="561" alt="imagen" src="https://github.com/user-attachments/assets/6fd75aa1-77d3-44dc-8358-578e76309711" />
 
+### Pipeline
+Este script de Python implementa un pipeline completo para el análisis de vídeos de tráfico y de 'cosecha propia'. El objetivo es detectar vehículos y localizar sus matrículas.
+
+El proceso completo genera dos artefactos principales: un vídeo de salida con las detecciones visualizadas y un archivo CSV con el volcado de todos los datos detectados, frame a frame.
+
+El núcleo del script es un pipeline de dos modelos YOLO que funcionan en cascada.
+
+- El modelo YOLO base para detectar los vehículos
+- El modelo YOLO entrenado para detectar las matrículas de dichos vehículos.
+
+#### Configuración y carga de dependencias
+
+En esta parte del código cargaremos todas las librerías necesarias para la visualización, procesamiento y volcado de los datos.
+
+Cargarmos el modelo YOLO de vehículos y nuestro modelo que se encuentra en `runs/detect/train5/weights/best.pt'`. Nos aseguramos de usar **GPU** tanto al cargar el OCR como al cargar los modelos, para agilizar el proceso.
+
 ```py
 from ultralytics import YOLO
 import cv2
@@ -65,7 +88,14 @@ except Exception as e:
     print(f"No se pudo cargar EasyOCR en GPU ({e}), cargando en CPU...")
     reader_ocr = easyocr.Reader(['es', 'en'], gpu=False)
     print("EasyOCR cargado en CPU.")
+```
 
+Luego cargamos las rutas al vídeo que vamos a procesar y especificamos donde guardaremos los resultados.
+
+- `csv_data` será la lista de headers que queremos en nuestro archivo CSV.
+- `classes_to_detect` es la lista de clases que el modelo detectará, en este caso las pedidas por el ejercicio.
+
+```py
 
 vid_route = "./C0142.mp4"
 video_out_path = "./results/resultado_practica2.mp4"
@@ -74,6 +104,14 @@ csv_data = []
 
 # 0: persona, 2: coche, 5: bus, 7: camión
 classes_to_detect = [0, 2, 5, 7]
+
+```
+
+Se utiliza cv2.VideoCapture para leer el archivo de vídeo frame a frame.
+
+Paralelamente, se configura un cv2.VideoWriter que se usará para escribir cada frame procesado en un nuevo archivo de vídeo (resultado_practica2.mp4). Es crucial que el writer se inicialice con las mismas propiedades (FPS, ancho y alto) que el vídeo original para evitar una salida corrupta.
+
+```py
 
 cap = cv2.VideoCapture(vid_route)
 if not cap.isOpened():
@@ -89,7 +127,13 @@ DISPLAY_HEIGHT = int(DISPLAY_WIDTH * aspect_ratio)
 fps = int(cap.get(cv2.CAP_PROP_FPS))
 fourcc = cv2.VideoWriter_fourcc(*'MP4V')
 out_video = cv2.VideoWriter(video_out_path, fourcc, fps, (frame_width, frame_height))
+```
 
+Se ha incluido `DISPLAY_WIDTH` para poder modificar la resolución en la que se muestra el video mientras es procesado por comodidad y diferencias en distintos dispositivos.
+
+#### Pipeline de modelos
+
+```py
 frame_number = 0
 total_vehicles = set()
 total_people = set()
@@ -98,7 +142,15 @@ total_plates = 0
 # Listas para el procesamiento por lotes
 vehicle_rois = []
 vehicle_data_batch = []
+```
 
+Contadores: Se inicializan las variables para llevar la cuenta de lo que se procesa. frame_number cuenta los fotogramas. total_vehicles y total_people usan un set() para contar solo los IDs únicos de vehículos y personas (evitando contarlos en cada fotograma). total_plates es un contador simple de cuántas veces se detecta una matrícula.
+
+Lotes: vehicle_rois y vehicle_data_batch son listas clave para optimizar. En lugar de ejecutar el modelo de matrículas en cada coche uno por uno, se guarda aquí todos los recortes de los coches de un fotograma y los procesará todos juntos al final.
+
+Comenzamos el bucle mientras existan fotogramas y limpiamos las listas en cada uno de ellos.
+
+```py
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -110,17 +162,32 @@ while True:
     # Limpiamos las listas en cada fotograma
     vehicle_rois.clear()
     vehicle_data_batch.clear()
+```
 
-    resultados = vehicle_model.track(
+Ahora pasamos a la parte en la que detectamos los vehículos en cada fotograma. Iniciamos el modelo detector de vehículos con `model.track()`.
+
+```py
+resultados = vehicle_model.track(
       frame,
       classes=classes_to_detect,
       imgsz=640,
       conf=0.6,
       verbose=False,
-      device=0,  # Forzar GPU
-      persist=True # Mantener el seguimiento entre fotogramas
+      device=0,   # Forzar GPU
+      persist=True # Mantener el seguimiento entre fotogramas de los vehículos/personas
     )
+```
 
+Le pasamos:
+
+- Clases a detectar (vehículos)
+- tamaño de imágenes de un poco más de resolución igual que en el entrenamiento.
+- un nivel de confianza medio del 60% para evitar malas detecciones
+- Usaremos GPU ya que la tenemos disponible.
+- Mantendremos el seguimiento de los vehiculos entre fotogramas aprovechando el atributo `persist=True`.
+
+
+```py
 
     if resultados[0].boxes.id is not None:
         for i, box in enumerate(resultados[0].boxes):
@@ -658,6 +725,7 @@ El resultado muestra que, de las 50 imágenes analizadas de la carpeta test:
 * **EasyOCR** acertó 14 de 50 matriculas y tardó 3.85 segundos por imagen.
 * **Tessreact** acertó solo 2 matrículas y fue más rápido, con 2.37 segundos imagen.
 En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso.
+
 
 
 
