@@ -12,7 +12,28 @@ patience=50,
 device=0
 )
 ```
+```
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+     98/100     0.777G     0.5494     0.3358     0.8266          3        640: 100% ━━━━━━━━━━━━ 110/110 10.2it/s 10.8s0.2s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 13.7it/s 1.0s0.2s
+                   all        109        114      0.991      0.947      0.966      0.807
 
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+     99/100     0.777G     0.5396     0.3297     0.8286          3        640: 100% ━━━━━━━━━━━━ 110/110 10.2it/s 10.8s.2ss
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 10.5it/s 1.3s.2s
+                   all        109        114      0.988      0.939      0.959       0.81
+
+      Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+    100/100     0.777G     0.5529     0.3381     0.8334          3        640: 100% ━━━━━━━━━━━━ 110/110 10.2it/s 10.8s0.1s
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100% ━━━━━━━━━━━━ 14/14 13.6it/s 1.0s0.2s
+                   all        109        114      0.991      0.947      0.967      0.818
+
+100 epochs completed in 0.344 hours.
+Optimizer stripped from D:\EII\VC-Practica-1-\P4\runs\detect\train5\weights\last.pt, 5.5MB
+Optimizer stripped from D:\EII\VC-Practica-1-\P4\runs\detect\train5\weights\best.pt, 5.5MB
+```
+
+<img width="1048" height="561" alt="imagen" src="https://github.com/user-attachments/assets/6fd75aa1-77d3-44dc-8358-578e76309711" />
 
 ```py
 from ultralytics import YOLO
@@ -297,6 +318,9 @@ cv2.destroyAllWindows()
 print("Ventana cerrada.")
 ```
 
+<img width="900" height="506" alt="imagen" src="https://github.com/user-attachments/assets/fca31434-4d21-4d0f-a7a2-48e51e41e1ab" />
+
+
 ```py
 from ultralytics import YOLO
 import cv2
@@ -530,4 +554,5 @@ Gráfica 'grafica_precision.png' guardada.
 <img width="728" height="530" alt="image" src="https://github.com/user-attachments/assets/c6ef2729-d391-418f-a994-aa93ef8a41fd" />
 
 <img width="736" height="587" alt="image" src="https://github.com/user-attachments/assets/a4d348c9-3794-475a-a678-77ed14ce5150" />
+
 
