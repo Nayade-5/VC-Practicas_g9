@@ -1,9 +1,9 @@
 # TGCRBNW paths
 
 # train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
-train: D:\EII\VC-Practica-1-\P4\matriculas\train
-val: D:\EII\VC-Practica-1-\P4\matriculas\val
-test: D:\EII\VC-Practica-1-\P4\matriculas\test
+train: C:\EII\VC\VC-Practica-1-\P4\matriculas\train
+val: C:\EII\VC\VC-Practica-1-\P4\matriculas\val
+test: C:\EII\VC\VC-Practica-1-\P4\matriculas\test
 
 # number of classes
 nc: 1
