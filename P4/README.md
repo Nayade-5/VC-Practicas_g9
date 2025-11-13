@@ -492,12 +492,9 @@ except FileNotFoundError:
 vehicle_model = YOLO('yolo11n.pt')
 
 try:
-    plate_model = YOLO('runs/detect/train3/weights/best.pt')
+    plate_model = YOLO('runs/detect/train5/weights/best.pt')
 except FileNotFoundError:
-    print("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print("ERROR: No se encontró el archivo 'runs/detect/train3/weights/best.pt'")
-    print("Por favor, pon la ruta correcta a tu modelo de matrículas entrenado.")
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+    print("ERROR: No se encontró el archivo 'runs/detect/train5/weights/best.pt'")
     exit()
 
 print("Forzando carga de EasyOCR en CPU.")
@@ -769,6 +766,7 @@ El resultado muestra que, de las 102 imágenes analizadas de la carpeta test:
 * **EasyOCR** acertó **45 de 102 matriculas** y tardó **0.5561 segundos** por imagen.
 * **Tesseract** acertó solo **6 matrículas** y fue más rápido, con **0.1324 segundos** por imagen.
 En conclusión, EasyOCR es más preciso pero más lento, mientras que Tessereact es más rápido pero mucho menos preciso. Si se busca una opción más fiable pero más lenta incluso que estos dos modelos, convendría el uso de un VLM como se menciona en el README de la práctica.
+
 
 
 
