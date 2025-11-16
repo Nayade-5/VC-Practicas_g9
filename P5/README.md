@@ -206,7 +206,6 @@ La última línea le dice a la demo que el modelo solo analice 1 fotograma cada 
 
 A continuación, realizamos una función que permite superponer la imagen que corresponda seguún el estado de la persona. Es necesario **que la imagen tenga transparencia**, es decir, que tenga 4 canales.
 
-Posteriormente cargamos los recursos necesarios y comenzamos con el procesamiento de imágen.
 ```py
 
 # Función para superponer imágenes
@@ -258,7 +257,13 @@ except FileNotFoundError as e:
          sad_emoji = None
 
 print("Pulsa 'q' para salir.")
+
 ```
+
+Es importante que si se visualiza que no aparece alguna de las imágenes, se compruebe los `EMOJI_FILE` correspondientes y si tienen al menos **4 canales**.
+
+A continuación se comienza la parte de procesamiento de imagen de la demostración:
+
 ```py
 cap = cv2.VideoCapture(0)
 
@@ -364,6 +369,8 @@ Finalmente, mostramos el frame procesado en una ventana. Si el usuario pulsa la 
 
 
 En esta parte de la tarea, vamos utilizar redes neuronales para identificar la expresión faciales, movimientos de la cabeza y según ello se añaden automáticamewnte distintos elementos gráficos.
+
+### Prototipo 2. Face Meme Control
 
 ```py
 import cv2
@@ -619,3 +626,7 @@ cv2.destroyAllWindows()
 ```
 El fotograma final se muestra en una ventana con `cv2.imshow`. Si el usuario pulsa ‘q’, el bucle se detiene. Después se libera la cámara con `cap.release()` y se cierran todas las ventanas con `cv2.destroyAllWindows()` para cerrar el programa correctamente.
 
+Por último se muestra un ejemplo de funcionamiento del demostrador construido:
+
+
+![Demostracion meme](meme_detector.gif)
