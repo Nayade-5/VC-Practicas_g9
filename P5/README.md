@@ -263,8 +263,10 @@ Cada cierto número de frames, hacemos el análisis de la cara con DeepFace. Pri
         cv2.rectangle(frame, (x, y), (x+w, y+h), last_color, 2)
         cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, last_color, 2)
 ```
-Si tenemos la posición de la cara ```last_box```, dibujamos un rectángulo alrededor de ella con el color según la emoción. También mostramos un texto con la emoción y su confianza.
-Si la emoción es “sonriendo” o “triste” y la confianza supera el umbral, colocamos un emoji sobre la cara usando la función overlay_transparent. El tamaño y la posición del emoji se calculan para que se vea proporcional a la cara y centrado sobre ella.
+Si tenemos la posición de la cara (last_box), dibujamos un rectángulo alrededor de ella usando un color que representa la emoción detectada. Además, mostramos un texto con el nombre de la emoción y su porcentaje de confianza.
+
+Cuando la emoción es “sonriendo” o “triste” y la confianza supera el umbral definido, colocamos un emoji correspondiente sobre la cara mediante la función overlay_transparent. Tanto el tamaño como la posición del emoji se calculan en relación al ancho de la cara para que quede proporcionado y centrado sobre el rostro. Esto asegura que el efecto se vea natural y que la reacción sea visualmente clara, haciendo que la interacción sea más divertida y fácil de interpretar para el usuario.
+
 ```py
 
 
