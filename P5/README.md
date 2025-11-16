@@ -268,6 +268,8 @@ cap.release()
 cv2.destroyAllWindows()
 ```
 
+En esta parte de la tarea, vamos utilizar redes neuronales para identificar la expresión faciales, movimientos de la cabeza y según ello se añaden automáticamewnte distintos elementos gráficos.
+
 ```py
 import cv2
 import numpy as np
@@ -275,21 +277,20 @@ from deepface import DeepFace
 from mtcnn import MTCNN
 import random
 
-# Imágenes
 GLASSES_FILE = "swagger_glasses.png"
 CHAR_FILE = "pepo.png"
 CHAR_MALE_FILE = "bigote.png"   
 CHAR_FEMALE_FILE = "lazo.png"
 CHAR_SPY_FILE = "pepo_spy.png"
 
-# Detecciones cada 15 fotogramas (motivos de rendimiento)
 FRAME_SKIP_RATE = 15  
-
-# Parámetros para ajustes de los efectos
 CONF_THRESHOLD = 50
 GLASSES_SPEED = 15
 HEAD_TURN_THRESHOLD = 0.18
+```
+En esa parte código, cargamos todas las librerías escenciales para el funcionamiento del programa. OpenCV se utiliza para manejar la cámara y procesar imágenes en tiemo real; MTCNN se encarga de detcra el rostro y sus puntos faciales clave; y DeepFace permite  identificar emociones y género. Además, se define los archivos de recursos imágenes con transparencia para los efectos visuales, junto con parámetros que regulan el comportamiento y sensibilidad del sistema.
 
+```py
 # Función de superposición de imágenes 
 def overlay_transparent(bg, overlay, x, y, scale=1.0):
     try:
@@ -332,7 +333,10 @@ def overlay_transparent(bg, overlay, x, y, scale=1.0):
     except Exception as e:
         print(f"Error al superponer imagen: {e}")
     return bg
+```
+Esta función, permite colocar efectos efectos gráficos encima del rostro detectado. Lo que hace primero es ajustar el tamaño del efecto para que se vea bien según dónde lo vayamos a colocar, luego comprueba que la imagen no se salga del borde del vídeo, porque si no daría errores. Después usa el canal alfa, que es parte de la imagen que controla la trasparencia, para mezclar los colores del efecto con los del fotograma de la cámara. También controla casos en los que el efecto queda medio fuera de la patnlla y recorta solo la parte que se ve. Y si ocurre algún error durante la superposición, lo captura para que el programa no se rompa.  
 
+```py
 # Cargar Imágenes  
 glasses = cv2.imread(GLASSES_FILE, -1)
 character = cv2.imread(CHAR_FILE, -1)
