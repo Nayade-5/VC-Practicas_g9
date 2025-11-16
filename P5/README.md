@@ -511,6 +511,9 @@ En ambos casos, se usa la función ```overlay_transparent``` para que el efecto 
                                                 spy_y,
                                                 scale=spy_scale)
 ```
+En esta parte calculamos la posición de los ojos y de la nariz para determinar hacia dónde está girando la cabeza. Primero medimos la distancia entre los ojos ojos y calculamos el cnetro de los mismos. Luego compara la posición de la nariz respecto a ese centro y obtiene un valor normalizado que indica el giro de la cabeza.
+Si se gira la cabeza a la derecha más allá de cierto umbral, el personaje aparece por el borde izquierdo, y si se gira al contrario aparecerá a la derecha. El tamaño y posición del personaje se ajusta según el tamaño del frame para que se vea proporcionado.
+
 ```py
     cv2.imshow("Face Meme Control - 'q' para salir", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -519,4 +522,5 @@ En ambos casos, se usa la función ```overlay_transparent``` para que el efecto 
 cap.release()
 cv2.destroyAllWindows()
 ```
+El fotograma final se muestra en una ventana con `cv2.imshow`. Si el usuario pulsa ‘q’, el bucle se detiene. Después se libera la cámara con `cap.release()` y se cierran todas las ventanas con `cv2.destroyAllWindows()` para cerrar el programa correctamente.
 
