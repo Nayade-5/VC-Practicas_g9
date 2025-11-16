@@ -455,8 +455,9 @@ Por último, si `last_box` existe, guardamos sus coordenadas para usarlas despu�
         else:
             glasses_pos = None
 ```
+Dependiendo de la emoción detectada, se colocan diferentes efectos. En caso de ser felicidad, calculamos el tamaño y la posición de las gafas usando los ojos como referencia. Si es la primera vez, las colacos arriba y luego ahcemos que "caigan" suavemente hasta la posición correcta. Finalmente dibujamos sobre el frame con ```overlay_transparent```. Si la posición cambia , reiniciamos la posición.
+
 ```py
-        # Si last_gender es Woman añade bigote, sino un lazo
         if last_dominant == 'surprise' and last_landmarks:
             if last_gender == 'Woman':
                 nose_x, nose_y = last_landmarks['nose']
@@ -476,8 +477,12 @@ Por último, si `last_box` existe, guardamos sus coordenadas para usarlas despu�
                                             le_y - sh - (h // 20),
                                             scale=scale)
 ```
+En caso de que la persona detectada muestra sorpresa, el programa evalúa el geénero de la persona. Si el género detectado es mujer, se coloca un bigote sobre la nariz. Para ello, se usan las coordenadas de la nariz y se calcula el tamño del bigote en proporción al ancho de la cara, de modo que quede centardo.
+Si al contrario fuera hombre, se colcoa un lazo sobre el ojo izquierdo. Tambíen se ajusta el tamaño y posición del lazo según las dimensiones de la cara. 
+En ambos casos, se usa la función ```overlay_transparent``` para que el efecto se integre con el fotograma de forma natural.
+
 ```py
-        # Pepo espía
+       
         if last_landmarks and char_spy is not None:
             le_x = last_landmarks['left_eye'][0]
             re_x = last_landmarks['right_eye'][0]
