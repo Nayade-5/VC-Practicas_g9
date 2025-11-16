@@ -383,7 +383,6 @@ while True:
     
     frame_count += 1
     
-    # Detección de cara y landmarks en cada frame
     try:
         faces = detector.detect_faces(frame)
         if faces:
@@ -426,6 +425,11 @@ while True:
     if last_box is not None:
         x, y, w, h = last_box
 ```
+En este bloque empieza el bucle principal del programa, que se ejecuta todo el rato mientras la cámara esté funcionando. Primero intentamos leer un frame de la cámara; si por alguna razón no se puede leer, salimos del bucle. Cada vez que se captura un frame, aumentacomos el contador.
+Seguidamente viene la parte donde detectamos la cara y los puntos faciales.Usamos ```detector.detect_faces(frame)``` para buscar caras en la imagen. Si encuentra alguna, lo guardamos en la varable ```last_box``` y los puntos claves del rostro en ```last_landmarks```. Todo esto se hace en un ```try/except```, para que el programa no se detenga, aunque el detector fallará.
+Cada cierto número de frames, según `FRAME_SKIP_RATE`, analizamos emoción y género, siempre que haya una cara detectada. Para ello recortamos la zona del rostro y la pasamos a DeepFace, que devuelve las emociones y el género. Nos quedamos con la emoción más alta, y si no alcanza el nivel de confianza, la dejamos como “neutral”. El género también se guarda en `last_gender`. Todo esto está dentro de un `try/except` por si DeepFace falla.
+Por último, si `last_box` existe, guardamos sus coordenadas para usarlas después al colocar los efectos.
+
 ```py        
 
         if last_dominant == 'happy' and glasses is not None and last_landmarks:
@@ -471,7 +475,7 @@ while True:
                                             le_x - sw // 2,
                                             le_y - sh - (h // 20),
                                             scale=scale)
-
+```
 ```py
         # Pepo espía
         if last_landmarks and char_spy is not None:
