@@ -176,7 +176,8 @@ except FileNotFoundError as e:
          sad_emoji = None
 
 print("Pulsa 'q' para salir.")
-
+```
+```py
 cap = cv2.VideoCapture(0)
 
 # Variables  
@@ -185,15 +186,19 @@ last_box = None
 last_label_name = "neutral"
 last_confidence = 0.0
 last_color = (0, 0, 255)
+```
+En esta parte abrimos la cámara con OpenCV. Después incializamos varias variables para ir guardando información durante el programa: un contador de frames, la última posición de la cara detectadam la última emoción detectada, la confianza de esa predicción y el color que vamos a usar para dibujar la caja según la emoción.
 
+```py
 while True:
     ret, frame = cap.read()
     if not ret:
         break
     
     frame_count += 1
-    
-    # Búsqueda / análisis
+  ```
+  Este es el bucle principal que se ejecuta mientras la cámara está abierta. En cada vuelta intentamos leer un frame de la cámara. Si falla, salimos del bucle. También aumentamos el contador de frames, que luego nos sirve para controlar cada cuantos frames hacemos el análisis de emociones.
+ ```py
     if frame_count % FRAME_SKIP_RATE == 0:
         try:
             embedding_objs = DeepFace.represent(frame,
@@ -229,9 +234,10 @@ while True:
         except Exception as e:
             print(f"Error en el bucle de análisis: {e}")
             last_box = None
+```
+Cada cierto número de frames, hacemos el análisis de la cara con DeepFace. Primero obtenemos la representación del rostro ```embedding```. Si se detecta alguna cara, guardamos la posición en ```last_box``` y el vector de características faciales. Luego usamos nuestro modelo para predecir la emoción y la probabilidad de esa predicción. Según la emoción detectada y su confianza, cambiamos el color de la caja: verde para sonriendo, azul para triste y rojo si no hay confianza suficiente.
 
-    
-    # Renderizado
+```py
     if last_box is not None:
         x, y, w, h = last_box
         
@@ -256,7 +262,10 @@ while True:
         
         cv2.rectangle(frame, (x, y), (x+w, y+h), last_color, 2)
         cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, last_color, 2)
-
+```
+Si tenemos la posición de la cara ```last_box```, dibujamos un rectángulo alrededor de ella con el color según la emoción. También mostramos un texto con la emoción y su confianza.
+Si la emoción es “sonriendo” o “triste” y la confianza supera el umbral, colocamos un emoji sobre la cara usando la función overlay_transparent. El tamaño y la posición del emoji se calculan para que se vea proporcional a la cara y centrado sobre ella.
+```py
 
 
     cv2.imshow("Detector de Sonrisas - 'q' para salir", frame)
@@ -267,6 +276,8 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 ```
+Finalmente, mostramos el frame procesado en una ventana. Si el usuario pulsa la tecla ‘q’, salimos del bucle. Al terminar, liberamos la cámara y cerramos todas las ventanas de OpenCV para que el programa termine correctamente.
+
 
 En esta parte de la tarea, vamos utilizar redes neuronales para identificar la expresión faciales, movimientos de la cabeza y según ello se añaden automáticamewnte distintos elementos gráficos.
 
