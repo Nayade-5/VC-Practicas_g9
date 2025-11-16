@@ -258,7 +258,8 @@ except FileNotFoundError as e:
          sad_emoji = None
 
 print("Pulsa 'q' para salir.")
-
+```
+```py
 cap = cv2.VideoCapture(0)
 
 # Variables  
@@ -267,15 +268,19 @@ last_box = None
 last_label_name = "neutral"
 last_confidence = 0.0
 last_color = (0, 0, 255)
+```
+En esta parte abrimos la cámara con OpenCV. Después incializamos varias variables para ir guardando información durante el programa: un contador de frames, la última posición de la cara detectadam la última emoción detectada, la confianza de esa predicción y el color que vamos a usar para dibujar la caja según la emoción.
 
+```py
 while True:
     ret, frame = cap.read()
     if not ret:
         break
     
     frame_count += 1
-    
-    # Búsqueda / análisis
+  ```
+  Este es el bucle principal que se ejecuta mientras la cámara está abierta. En cada vuelta intentamos leer un frame de la cámara. Si falla, salimos del bucle. También aumentamos el contador de frames, que luego nos sirve para controlar cada cuantos frames hacemos el análisis de emociones.
+ ```py
     if frame_count % FRAME_SKIP_RATE == 0:
         try:
             embedding_objs = DeepFace.represent(frame,
@@ -311,9 +316,10 @@ while True:
         except Exception as e:
             print(f"Error en el bucle de análisis: {e}")
             last_box = None
+```
+Cada cierto número de frames, hacemos el análisis de la cara con DeepFace. Primero obtenemos la representación del rostro ```embedding```. Si se detecta alguna cara, guardamos la posición en ```last_box``` y el vector de características faciales. Luego usamos nuestro modelo para predecir la emoción y la probabilidad de esa predicción. Según la emoción detectada y su confianza, cambiamos el color de la caja: verde para sonriendo, azul para triste y rojo si no hay confianza suficiente.
 
-    
-    # Renderizado
+```py
     if last_box is not None:
         x, y, w, h = last_box
         
@@ -338,7 +344,12 @@ while True:
         
         cv2.rectangle(frame, (x, y), (x+w, y+h), last_color, 2)
         cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, last_color, 2)
+```
+Si tenemos la posición de la cara (last_box), dibujamos un rectángulo alrededor de ella usando un color que representa la emoción detectada. Además, mostramos un texto con el nombre de la emoción y su porcentaje de confianza.
 
+Cuando la emoción es “sonriendo” o “triste” y la confianza supera el umbral definido, colocamos un emoji correspondiente sobre la cara mediante la función overlay_transparent. Tanto el tamaño como la posición del emoji se calculan en relación al ancho de la cara para que quede proporcionado y centrado sobre el rostro. Esto asegura que el efecto se vea natural y que la reacción sea visualmente clara, haciendo que la interacción sea más divertida y fácil de interpretar para el usuario.
+
+```py
 
 
     cv2.imshow("Detector de Sonrisas - 'q' para salir", frame)
@@ -349,6 +360,10 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 ```
+Finalmente, mostramos el frame procesado en una ventana. Si el usuario pulsa la tecla ‘q’, salimos del bucle. Al terminar, liberamos la cámara y cerramos todas las ventanas de OpenCV para que el programa termine correctamente.
+
+
+En esta parte de la tarea, vamos utilizar redes neuronales para identificar la expresión faciales, movimientos de la cabeza y según ello se añaden automáticamewnte distintos elementos gráficos.
 
 ```py
 import cv2
@@ -357,21 +372,20 @@ from deepface import DeepFace
 from mtcnn import MTCNN
 import random
 
-# Imágenes
 GLASSES_FILE = "swagger_glasses.png"
 CHAR_FILE = "pepo.png"
 CHAR_MALE_FILE = "bigote.png"   
 CHAR_FEMALE_FILE = "lazo.png"
 CHAR_SPY_FILE = "pepo_spy.png"
 
-# Detecciones cada 15 fotogramas (motivos de rendimiento)
 FRAME_SKIP_RATE = 15  
-
-# Parámetros para ajustes de los efectos
 CONF_THRESHOLD = 50
 GLASSES_SPEED = 15
 HEAD_TURN_THRESHOLD = 0.18
+```
+En esa parte código, cargamos todas las librerías escenciales para el funcionamiento del programa. OpenCV se utiliza para manejar la cámara y procesar imágenes en tiemo real; MTCNN se encarga de detcra el rostro y sus puntos faciales clave; y DeepFace permite  identificar emociones y género. Además, se define los archivos de recursos imágenes con transparencia para los efectos visuales, junto con parámetros que regulan el comportamiento y sensibilidad del sistema.
 
+```py
 # Función de superposición de imágenes 
 def overlay_transparent(bg, overlay, x, y, scale=1.0):
     try:
@@ -414,15 +428,17 @@ def overlay_transparent(bg, overlay, x, y, scale=1.0):
     except Exception as e:
         print(f"Error al superponer imagen: {e}")
     return bg
+```
+Esta función, permite colocar efectos efectos gráficos encima del rostro detectado. Lo que hace primero es ajustar el tamaño del efecto para que se vea bien según dónde lo vayamos a colocar, luego comprueba que la imagen no se salga del borde del vídeo, porque si no daría errores. Después usa el canal alfa, que es parte de la imagen que controla la trasparencia, para mezclar los colores del efecto con los del fotograma de la cámara. También controla casos en los que el efecto queda medio fuera de la patnlla y recorta solo la parte que se ve. Y si ocurre algún error durante la superposición, lo captura para que el programa no se rompa.  
 
-# Cargar Imágenes  
+```py
+
 glasses = cv2.imread(GLASSES_FILE, -1)
 character = cv2.imread(CHAR_FILE, -1)
 char_male = cv2.imread(CHAR_MALE_FILE, -1)
 char_female = cv2.imread(CHAR_FEMALE_FILE, -1)
 char_spy = cv2.imread(CHAR_SPY_FILE, -1)
 
-# Depuración 
 if glasses is None: 
     print("No se encontró la imagen de gafas.")
 if character is None: 
@@ -433,7 +449,6 @@ if char_male is None or char_female is None:
 if char_spy is None:
     print("No se encontró pepo_spy.png.")
 
-# Cámara en vivo 
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("No se encontró una fuente de vídeo.")
@@ -441,7 +456,7 @@ if not cap.isOpened():
 
 print(" Meme Face Control Iniciado  — pulsa 'q' para salir.")
 
-# Inicialización  
+
 detector = MTCNN()
 
 frame_count = 0
@@ -450,7 +465,12 @@ last_landmarks = None
 last_dominant = "neutral"
 last_gender = "Man"
 glasses_pos = None
+```
+Lo que hacemos en el código es cargar todas las imagenes que vamos a usar como efectos, después comprobamos si alguna de estas imágenes no se ha podido carga; si falta alguna importante, como las imágenes de género, el programa muestra un mensaje de error y se cierra para evitar fallos más adelante.
+Luego activamos la cámara, si por alguna razón no se detecta se mostrá un mensaje y salimos del progrma. Si va bien, aparece un mensaje indicando que el sistema ha empezado y que se puede salir pulsando la 'q'.
+Después crearemos el detector de caras MTCNN, que será el que busque la cara y los puntos faciales de cada frame.Finalmente, inicializamos variables que iremos que vamos a ir actualizando durante el programa.
 
+```py
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -458,7 +478,6 @@ while True:
     
     frame_count += 1
     
-    # Detección de cara y landmarks en cada frame
     try:
         faces = detector.detect_faces(frame)
         if faces:
@@ -500,7 +519,13 @@ while True:
     # Render
     if last_box is not None:
         x, y, w, h = last_box
-        
+```
+En este bloque empieza el bucle principal del programa, que se ejecuta todo el rato mientras la cámara esté funcionando. Primero intentamos leer un frame de la cámara; si por alguna razón no se puede leer, salimos del bucle. Cada vez que se captura un frame, aumentacomos el contador.
+Seguidamente viene la parte donde detectamos la cara y los puntos faciales.Usamos ```detector.detect_faces(frame)``` para buscar caras en la imagen. Si encuentra alguna, lo guardamos en la varable ```last_box``` y los puntos claves del rostro en ```last_landmarks```. Todo esto se hace en un ```try/except```, para que el programa no se detenga, aunque el detector fallará.
+Cada cierto número de frames, según `FRAME_SKIP_RATE`, analizamos emoción y género, siempre que haya una cara detectada. Para ello recortamos la zona del rostro y la pasamos a DeepFace, que devuelve las emociones y el género. Nos quedamos con la emoción más alta, y si no alcanza el nivel de confianza, la dejamos como “neutral”. El género también se guarda en `last_gender`. Todo esto está dentro de un `try/except` por si DeepFace falla.
+Por último, si `last_box` existe, guardamos sus coordenadas para usarlas después al colocar los efectos.
+
+```py        
 
         if last_dominant == 'happy' and glasses is not None and last_landmarks:
             g_w = w
@@ -524,8 +549,10 @@ while True:
                                         scale=g_w / glasses.shape[1])
         else:
             glasses_pos = None
+```
+Dependiendo de la emoción detectada, se colocan diferentes efectos. En caso de ser felicidad, calculamos el tamaño y la posición de las gafas usando los ojos como referencia. Si es la primera vez, las colacos arriba y luego ahcemos que "caigan" suavemente hasta la posición correcta. Finalmente dibujamos sobre el frame con ```overlay_transparent```. Si la posición cambia , reiniciamos la posición.
 
-        # Si last_gender es Woman añade bigote, sino un lazo
+```py
         if last_dominant == 'surprise' and last_landmarks:
             if last_gender == 'Woman':
                 nose_x, nose_y = last_landmarks['nose']
@@ -544,9 +571,13 @@ while True:
                                             le_x - sw // 2,
                                             le_y - sh - (h // 20),
                                             scale=scale)
+```
+En caso de que la persona detectada muestra sorpresa, el programa evalúa el geénero de la persona. Si el género detectado es mujer, se coloca un bigote sobre la nariz. Para ello, se usan las coordenadas de la nariz y se calcula el tamño del bigote en proporción al ancho de la cara, de modo que quede centardo.
+Si al contrario fuera hombre, se colcoa un lazo sobre el ojo izquierdo. Tambíen se ajusta el tamaño y posición del lazo según las dimensiones de la cara. 
+En ambos casos, se usa la función ```overlay_transparent``` para que el efecto se integre con el fotograma de forma natural.
 
-
-        # Pepo espía
+```py
+       
         if last_landmarks and char_spy is not None:
             le_x = last_landmarks['left_eye'][0]
             re_x = last_landmarks['right_eye'][0]
@@ -574,7 +605,11 @@ while True:
                                                 frame.shape[1] - spy_w,
                                                 spy_y,
                                                 scale=spy_scale)
+```
+En esta parte calculamos la posición de los ojos y de la nariz para determinar hacia dónde está girando la cabeza. Primero medimos la distancia entre los ojos ojos y calculamos el cnetro de los mismos. Luego compara la posición de la nariz respecto a ese centro y obtiene un valor normalizado que indica el giro de la cabeza.
+Si se gira la cabeza a la derecha más allá de cierto umbral, el personaje aparece por el borde izquierdo, y si se gira al contrario aparecerá a la derecha. El tamaño y posición del personaje se ajusta según el tamaño del frame para que se vea proporcionado.
 
+```py
     cv2.imshow("Face Meme Control - 'q' para salir", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
@@ -582,4 +617,5 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 ```
+El fotograma final se muestra en una ventana con `cv2.imshow`. Si el usuario pulsa ‘q’, el bucle se detiene. Después se libera la cámara con `cap.release()` y se cierran todas las ventanas con `cv2.destroyAllWindows()` para cerrar el programa correctamente.
 
