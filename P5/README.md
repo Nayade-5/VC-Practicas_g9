@@ -337,14 +337,13 @@ def overlay_transparent(bg, overlay, x, y, scale=1.0):
 Esta función, permite colocar efectos efectos gráficos encima del rostro detectado. Lo que hace primero es ajustar el tamaño del efecto para que se vea bien según dónde lo vayamos a colocar, luego comprueba que la imagen no se salga del borde del vídeo, porque si no daría errores. Después usa el canal alfa, que es parte de la imagen que controla la trasparencia, para mezclar los colores del efecto con los del fotograma de la cámara. También controla casos en los que el efecto queda medio fuera de la patnlla y recorta solo la parte que se ve. Y si ocurre algún error durante la superposición, lo captura para que el programa no se rompa.  
 
 ```py
-# Cargar Imágenes  
+
 glasses = cv2.imread(GLASSES_FILE, -1)
 character = cv2.imread(CHAR_FILE, -1)
 char_male = cv2.imread(CHAR_MALE_FILE, -1)
 char_female = cv2.imread(CHAR_FEMALE_FILE, -1)
 char_spy = cv2.imread(CHAR_SPY_FILE, -1)
 
-# Depuración 
 if glasses is None: 
     print("No se encontró la imagen de gafas.")
 if character is None: 
@@ -355,7 +354,6 @@ if char_male is None or char_female is None:
 if char_spy is None:
     print("No se encontró pepo_spy.png.")
 
-# Cámara en vivo 
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("No se encontró una fuente de vídeo.")
@@ -363,7 +361,7 @@ if not cap.isOpened():
 
 print(" Meme Face Control Iniciado  — pulsa 'q' para salir.")
 
-# Inicialización  
+
 detector = MTCNN()
 
 frame_count = 0
@@ -372,7 +370,12 @@ last_landmarks = None
 last_dominant = "neutral"
 last_gender = "Man"
 glasses_pos = None
+```
+Lo que hacemos en el código es cargar todas las imagenes que vamos a usar como efectos, después comprobamos si alguna de estas imágenes no se ha podido carga; si falta alguna importante, como las imágenes de género, el programa muestra un mensaje de error y se cierra para evitar fallos más adelante.
+Luego activamos la cámara, si por alguna razón no se detecta se mostrá un mensaje y salimos del progrma. Si va bien, aparece un mensaje indicando que el sistema ha empezado y que se puede salir pulsando la 'q'.
+Después crearemos el detector de caras MTCNN, que será el que busque la cara y los puntos faciales de cada frame.Finalmente, inicializamos variables que iremos que vamos a ir actualizando durante el programa.
 
+```py
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -422,7 +425,8 @@ while True:
     # Render
     if last_box is not None:
         x, y, w, h = last_box
-        
+```
+```py        
 
         if last_dominant == 'happy' and glasses is not None and last_landmarks:
             g_w = w
@@ -446,7 +450,8 @@ while True:
                                         scale=g_w / glasses.shape[1])
         else:
             glasses_pos = None
-
+```
+```py
         # Si last_gender es Woman añade bigote, sino un lazo
         if last_dominant == 'surprise' and last_landmarks:
             if last_gender == 'Woman':
@@ -467,7 +472,7 @@ while True:
                                             le_y - sh - (h // 20),
                                             scale=scale)
 
-
+```py
         # Pepo espía
         if last_landmarks and char_spy is not None:
             le_x = last_landmarks['left_eye'][0]
@@ -496,7 +501,8 @@ while True:
                                                 frame.shape[1] - spy_w,
                                                 spy_y,
                                                 scale=spy_scale)
-
+```
+```py
     cv2.imshow("Face Meme Control - 'q' para salir", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
