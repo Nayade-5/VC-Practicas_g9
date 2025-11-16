@@ -1,3 +1,18 @@
+## Practica 5
+Grupo 9
+
+- David Suárez Martel
+- Náyade García Torres
+
+### Entrenamiento
+En este proyecto, para realizar los prototipos deseados optamos por entrenar **SVM (Support Vector Machine)**. Para el desarrollo de este, se pasa información de imágenes escogidas de varios datasets de la plataforma [Kaggle](https://www.kaggle.com). Las cuales se pasan por una red neuronal, en concreto **VGG-Face**, para realizar la extracción de características.
+
+Los datos se recorrerán dentro de la carpeta [data](./data), en la que se dividen tres subcarpetas con las emociones a detectar:
+- Sonriendo
+- Triste
+- Neutral
+
+Cargamos el detector de DeepFace para caras, además de las herramientas que nos otorgan las diferentes librerías. `scikit-learn` nos proporcionará el SVC, las métricas y los útiles para el entrenamiento.
 ```py
 import os
 import numpy as np
@@ -20,6 +35,14 @@ y = []
 
 print(f"Iniciando entrenamiento")
 
+```
+
+Hemos definido las rutas a las imágenes e inicializado una lista para las características y otra para las etiquetas. Con esto ya podemos empezar a recorrer las imágenes, procesando cada categoría una a una.
+
+Usando `DeepFace.represent()` se realiza la extracción.
+Cada *embedding* es un vector numérico con las características de la cara una vez pasada por la red neuronal. 
+
+```py
 # Recorrer imágenes 
 for i, category in enumerate(CATEGORIES):
     path = os.path.join(DATA_DIR, category)
@@ -47,9 +70,21 @@ if not X:
     print("No se extrajo ninguna característica")
     exit()
 
+
 # Convertir a arrays de numpy
 X = np.array(X)
 y = np.array(y)
+
+```
+
+Una vez extraídos los *embeddings* de las imágenes, habiéndolos guardado en nuestras lístas de características y anotaciones (asignando una categoría a cada una), podemos seguir al siguiente paso.  
+
+Evaluaremos cómo de bueno llega a ser nuestro modelo SVC. Para ello realizamos un **split 80/20**, en el que:
+- 80% de imágenes serán para **entrenar**
+- 20% de imágenes serán para **probar**
+
+
+```py
 
 print(f"\nTotal de características extraídas: {X.shape}")
 print(f"Total de etiquetas: {y.shape}")
@@ -64,18 +99,13 @@ eval_model.fit(X_train, y_train)
 y_pred = eval_model.predict(X_test)
 print(classification_report(y_test, y_pred, target_names=CATEGORIES))
 
-
-print("\nEntrenando modelo final")
-final_model = SVC(kernel='linear', probability=True)
-final_model.fit(X, y)
-
-joblib.dump(final_model, MODEL_FILENAME)
-joblib.dump(CATEGORIES, CATEGORIES_FILENAME)
-
-print(f"\n Modelo guardado en '{MODEL_FILENAME}'")
-print(f"Categorías disponibles: '{CATEGORIES_FILENAME}'")
 ```
 
+`eval_model.fit` entrenará el modelo temporal (80%)
+
+`eval_model.predict(X_test)` predecir etiquetas que nunca ha visto (20%)
+
+Finalmente mostraremos un `classification_report()` para mostrar los resultados. Se verá así:
 ```
 Iniciando extracción de características con VGG-Face...
 
@@ -100,14 +130,58 @@ Evaluando modelo con split 80/20...
 
     accuracy                           0.94       361
    macro avg       0.94      0.94      0.94       361
-weighted avg       0.94      0.94      0.94       361
-
-
-Entrenando modelo final con TODOS los datos...
-
-¡Éxito! Modelo guardado en 'smile_classifier.pkl'
-Mapeo de categorías guardado en 'categories.pkl'
+weighted avg       0.94      0.94      0.94       361  
 ```
+
+En los resultados de entrenamiento se puede comprobar que el modelo funcionará adecuadamente. Es bastante exacto y `weighted_avg` nos indica que funciona bien con todas las categorías en general. Detecta con especial precisión la *tristeza* y la *sonrisa*. Sin embargo, el bajo **recall** en la tristeza muestra que se le escaparán ciertas caras tristes.
+
+**En conclusión:** El modelo será bastante fiable, detectará sonrisas perfectamente, pero a veces se confundirá levemente con tristeza y neutralidad. Es un curioso comportamiento similar al de los humanos cuando confundimos seriedad con tristeza.
+
+```py
+
+
+print("\nEntrenando modelo final")
+final_model = SVC(kernel='linear', probability=True)
+final_model.fit(X, y)
+
+joblib.dump(final_model, MODEL_FILENAME)
+joblib.dump(CATEGORIES, CATEGORIES_FILENAME)
+
+print(f"\n Modelo guardado en '{MODEL_FILENAME}'")
+print(f"Categorías disponibles: '{CATEGORIES_FILENAME}'")
+```
+Finalmente concluimos el entrenamiento y haciendo uso de `joblib` guardamos el modelo que hemos entrenado para su posterior uso.
+```
+Modelo guardado en 'smile_classifier.pkl'
+Categorias disponibles: 'categories.pkl'
+```
+### Prototipo 1. Detector de emociones (Demo)
+
+A partir del modelo entrenado anteriormente, se usará para realizar una demostración de su funcionamiento, en el que tendrá que detectar las emociones del usuario en la cámara.
+
+A continuación se presentan ejemplos de salidas para distintas emociones:
+
+*Tristeza*
+
+<img src="tristeza.jpg" alt="Texto alternativo" width="300"/>
+
+*Neutral*
+
+<img src="neutral.jpg" alt="Texto alternativo" width="300"/>
+
+*Sonriendo*
+
+<img src="sonriendo.jpg" alt="Texto alternativo" width="300"/>
+
+
+Para comenzar necesitaremos las dependencias necesarias para la demo y configuraciones varias.
+
+- `joblib`: Cargar el modelo.
+- `cv2`: Manejar la demo con la cámara.
+- `DeepFace`: Detección de las caras
+- `numpy`: Operaciones
+
+Además de estas librerías cargamos las imágenes a mostrar en la demo, el modelo detector de caras que usaremos y especificaremos la **confianza mínima** con la que se podrán detectar las caras.
 
 ```py
 import cv2
@@ -126,6 +200,14 @@ CONF_THRESHOLD = 0.70
 
 # Rendimiento
 FRAME_SKIP_RATE = 5  # Analizar 1 de cada 5 fotogramas
+
+```
+La última línea le dice a la demo que el modelo solo analice 1 fotograma cada *N* fotogramas. Esto se implementa por cuestiones de rendimiento a la hora de realizar la demostración. Entre menos pasadas, más fluida debería ir la demostración.
+
+A continuación, realizamos una función que permite superponer la imagen que corresponda seguún el estado de la persona. Es necesario **que la imagen tenga transparencia**, es decir, que tenga 4 canales.
+
+Posteriormente cargamos los recursos necesarios y comenzamos con el procesamiento de imágen.
+```py
 
 # Función para superponer imágenes
 def overlay_transparent(background_img, overlay_img, x, y):
