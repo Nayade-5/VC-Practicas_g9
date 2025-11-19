@@ -274,7 +274,7 @@ last_label_name = "neutral"
 last_confidence = 0.0
 last_color = (0, 0, 255)
 ```
-En esta parte abrimos la cámara con OpenCV. Después incializamos varias variables para ir guardando información durante el programa: un contador de frames, la última posición de la cara detectadam la última emoción detectada, la confianza de esa predicción y el color que vamos a usar para dibujar la caja según la emoción.
+En esta parte abrimos la cámara con OpenCV. Después incializamos varias variables para ir guardando información durante el programa: un contador de frames, la última posición de la cara detectada, la última emoción detectada, la confianza de esa predicción y el color que vamos a usar para dibujar la caja según la emoción.
 
 ```py
 while True:
