@@ -390,7 +390,7 @@ CONF_THRESHOLD = 50
 GLASSES_SPEED = 15
 HEAD_TURN_THRESHOLD = 0.18
 ```
-En esa parte código, cargamos todas las librerías escenciales para el funcionamiento del programa. OpenCV se utiliza para manejar la cámara y procesar imágenes en tiemo real; MTCNN se encarga de detcra el rostro y sus puntos faciales clave; y DeepFace permite  identificar emociones y género. Además, se define los archivos de recursos imágenes con transparencia para los efectos visuales, junto con parámetros que regulan el comportamiento y sensibilidad del sistema.
+En esa parte código, cargamos todas las librerías escenciales para el funcionamiento del programa. OpenCV se utiliza para manejar la cámara y procesar imágenes en tiemo real; MTCNN () se encarga de detectar el rostro y sus puntos faciales clave; y DeepFace permite  identificar emociones y género. Además, se define los archivos de recursos imágenes con transparencia para los efectos visuales, junto con parámetros que regulan el comportamiento y sensibilidad del sistema.
 
 ```py
 # Función de superposición de imágenes 
@@ -436,7 +436,7 @@ def overlay_transparent(bg, overlay, x, y, scale=1.0):
         print(f"Error al superponer imagen: {e}")
     return bg
 ```
-Esta función, permite colocar efectos efectos gráficos encima del rostro detectado. Lo que hace primero es ajustar el tamaño del efecto para que se vea bien según dónde lo vayamos a colocar, luego comprueba que la imagen no se salga del borde del vídeo, porque si no daría errores. Después usa el canal alfa, que es parte de la imagen que controla la trasparencia, para mezclar los colores del efecto con los del fotograma de la cámara. También controla casos en los que el efecto queda medio fuera de la patnlla y recorta solo la parte que se ve. Y si ocurre algún error durante la superposición, lo captura para que el programa no se rompa.  
+Esta función, permite colocar efectos efectos gráficos encima del rostro detectado. Lo que hace primero es ajustar el tamaño del efecto para que se vea bien según dónde lo vayamos a colocar, luego comprueba que la imagen no se salga del borde del vídeo, porque si no daría errores. Después usa el canal alfa, que es parte de la imagen que controla la trasparencia, para mezclar los colores del efecto con los del fotograma de la cámara. También controla casos en los que el efecto queda medio fuera de la pantalla y recorta solo la parte que se ve. Y si ocurre algún error durante la superposición, lo captura para que el programa no se rompa.  
 
 ```py
 
@@ -473,8 +473,8 @@ last_dominant = "neutral"
 last_gender = "Man"
 glasses_pos = None
 ```
-Lo que hacemos en el código es cargar todas las imagenes que vamos a usar como efectos, después comprobamos si alguna de estas imágenes no se ha podido carga; si falta alguna importante, como las imágenes de género, el programa muestra un mensaje de error y se cierra para evitar fallos más adelante.
-Luego activamos la cámara, si por alguna razón no se detecta se mostrá un mensaje y salimos del progrma. Si va bien, aparece un mensaje indicando que el sistema ha empezado y que se puede salir pulsando la 'q'.
+Lo que hacemos en el código es cargar todas las imagenes que vamos a usar como efectos. Después comprobamos si alguna de estas imágenes no se ha podido cargar. Si falta alguna importante, como las imágenes de género, el programa muestra un mensaje de error y se cierra para evitar fallos más adelante.
+Luego activamos la cámara, si por alguna razón no se detecta se mostrará un mensaje y saldrá del programa. Si va bien, aparece un mensaje indicando que el sistema ha empezado y que se puede salir pulsando la 'q'.
 Después crearemos el detector de caras MTCNN, que será el que busque la cara y los puntos faciales de cada frame.Finalmente, inicializamos variables que iremos que vamos a ir actualizando durante el programa.
 
 ```py
@@ -527,8 +527,8 @@ while True:
     if last_box is not None:
         x, y, w, h = last_box
 ```
-En este bloque empieza el bucle principal del programa, que se ejecuta todo el rato mientras la cámara esté funcionando. Primero intentamos leer un frame de la cámara; si por alguna razón no se puede leer, salimos del bucle. Cada vez que se captura un frame, aumentacomos el contador.
-Seguidamente viene la parte donde detectamos la cara y los puntos faciales.Usamos ```detector.detect_faces(frame)``` para buscar caras en la imagen. Si encuentra alguna, lo guardamos en la varable ```last_box``` y los puntos claves del rostro en ```last_landmarks```. Todo esto se hace en un ```try/except```, para que el programa no se detenga, aunque el detector fallará.
+En este bloque empieza el bucle principal del programa, que se ejecuta todo el rato mientras la cámara esté funcionando. Primero intentamos leer un frame de la cámara; si por alguna razón no se puede leer, salimos del bucle. Cada vez que se captura un frame, aumenta el contador.
+Seguidamente viene la parte donde detectamos la cara y los puntos faciales.Usamos ```detector.detect_faces(frame)``` para buscar caras en la imagen. Si encuentra alguna, lo guardamos en la variable ```last_box``` y los puntos claves del rostro en ```last_landmarks```. Todo esto se hace en un ```try/except```, para que el programa no se detenga, aunque el detector fallará.
 Cada cierto número de frames, según `FRAME_SKIP_RATE`, analizamos emoción y género, siempre que haya una cara detectada. Para ello recortamos la zona del rostro y la pasamos a DeepFace, que devuelve las emociones y el género. Nos quedamos con la emoción más alta, y si no alcanza el nivel de confianza, la dejamos como “neutral”. El género también se guarda en `last_gender`. Todo esto está dentro de un `try/except` por si DeepFace falla.
 Por último, si `last_box` existe, guardamos sus coordenadas para usarlas después al colocar los efectos.
 
@@ -557,7 +557,7 @@ Por último, si `last_box` existe, guardamos sus coordenadas para usarlas despu�
         else:
             glasses_pos = None
 ```
-Dependiendo de la emoción detectada, se colocan diferentes efectos. En caso de ser felicidad, calculamos el tamaño y la posición de las gafas usando los ojos como referencia. Si es la primera vez, las colacos arriba y luego ahcemos que "caigan" suavemente hasta la posición correcta. Finalmente dibujamos sobre el frame con ```overlay_transparent```. Si la posición cambia , reiniciamos la posición.
+Dependiendo de la emoción detectada, se colocan diferentes efectos. En caso de ser felicidad, calculamos el tamaño y la posición de las gafas usando los ojos como referencia. Si es la primera vez, las colocamos arriba y luego hacemos que "caigan" suavemente hasta la posición correcta. Finalmente dibujamos sobre el frame con ```overlay_transparent```. Si la posición cambia , reiniciamos la posición.
 
 ```py
         if last_dominant == 'surprise' and last_landmarks:
@@ -579,8 +579,8 @@ Dependiendo de la emoción detectada, se colocan diferentes efectos. En caso de 
                                             le_y - sh - (h // 20),
                                             scale=scale)
 ```
-En caso de que la persona detectada muestra sorpresa, el programa evalúa el geénero de la persona. Si el género detectado es mujer, se coloca un bigote sobre la nariz. Para ello, se usan las coordenadas de la nariz y se calcula el tamño del bigote en proporción al ancho de la cara, de modo que quede centardo.
-Si al contrario fuera hombre, se colcoa un lazo sobre el ojo izquierdo. Tambíen se ajusta el tamaño y posición del lazo según las dimensiones de la cara. 
+En caso de que la persona detectada muestra sorpresa, el programa evalúa el género de la persona. Si el género detectado es mujer, se coloca un bigote sobre la nariz. Para ello, se usan las coordenadas de la nariz y se calcula el tamaño del bigote en proporción al ancho de la cara, de modo que quede centrado.
+Si al contrario fuera hombre, se coloca un lazo sobre el ojo izquierdo. Tambíen se ajusta el tamaño y posición del lazo según las dimensiones de la cara. 
 En ambos casos, se usa la función ```overlay_transparent``` para que el efecto se integre con el fotograma de forma natural.
 
 ```py
@@ -613,7 +613,7 @@ En ambos casos, se usa la función ```overlay_transparent``` para que el efecto 
                                                 spy_y,
                                                 scale=spy_scale)
 ```
-En esta parte calculamos la posición de los ojos y de la nariz para determinar hacia dónde está girando la cabeza. Primero medimos la distancia entre los ojos ojos y calculamos el cnetro de los mismos. Luego compara la posición de la nariz respecto a ese centro y obtiene un valor normalizado que indica el giro de la cabeza.
+En esta parte calculamos la posición de los ojos y de la nariz para determinar hacia dónde está girando la cabeza. Primero medimos la distancia entre los ojos ojos y calculamos el centro de los mismos. Luego se compara la posición de la nariz respecto a ese centro y obtiene un valor normalizado que indica el giro de la cabeza.
 Si se gira la cabeza a la derecha más allá de cierto umbral, el personaje aparece por el borde izquierdo, y si se gira al contrario aparecerá a la derecha. El tamaño y posición del personaje se ajusta según el tamaño del frame para que se vea proporcionado.
 
 ```py
