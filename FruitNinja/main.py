@@ -39,8 +39,7 @@ explosions = []
 SPAWN_EVENT = pygame.USEREVENT + 1
 pygame.time.set_timer(SPAWN_EVENT, 1000) 
 
-score = 0
-font = pygame.font.Font(None, 48)
+
 
 # Blade Trail
 blade_points = []
@@ -97,7 +96,7 @@ def main():
         background = pygame.image.load(bg_path).convert()
         background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, SCREEN_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, SCREEN_HEIGHT)
 
@@ -128,9 +127,7 @@ def main():
                 running = False
             elif event.type == SPAWN_EVENT and not game_over:
                 # 20% de probabilidad de que sea una bomba
-                if random.random() < 0.2: 
-            elif event.type == SPAWN_EVENT:
-                if random.random() < BOMB_PROB:
+                if random.random() < BOMB_PROB: 
                     game_objects.append(Bomb(SCREEN_WIDTH, SCREEN_HEIGHT))
                 else:
                     game_objects.append(Fruit(SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -205,24 +202,6 @@ def main():
                 
                 if not obj.active:
                     game_objects.remove(obj)
-        for obj in game_objects[:]:
-            obj.move()
-            obj.draw(screen)
-
-            if hand_point and last_index_pos != (0, 0) and current_index_pos != (0, 0):
-                cut_speed = math.dist(last_index_pos, current_index_pos)
-
-                if cut_speed > MIN_CUT_SPEED and obj.check_cut(last_index_pos, current_index_pos):
-                    if isinstance(obj, Fruit):
-                        score += 1
-                        cut_fruits.append(CutFruit(obj, last_index_pos, current_index_pos))
-                    elif isinstance(obj, Bomb):
-                        score -= 5
-                        explosions.append(Explosion(obj.x, obj.y))
-
-            if not obj.active:
-                game_objects.remove(obj)
-
             for c_fruit in cut_fruits[:]:
                 c_fruit.move()
                 c_fruit.draw(screen)
