@@ -54,7 +54,7 @@ def main():
 
     # Sonido de corte
     try:
-        slice_sound = pygame.mixer.Sound(resource_path("soundtruck", "knife.mp3"))
+        slice_sound = pygame.mixer.Sound(resource_path("soundtrack", "knife.mp3"))
         slice_sound.set_volume(0.5)
     except:
         slice_sound = None
@@ -180,6 +180,10 @@ def main():
             over_font = pygame.font.Font(None, 100)
             over_text = over_font.render("GAME OVER", True, (255, 50, 50))
             screen.blit(over_text, over_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 20)))
+            
+            restart_font = pygame.font.Font(None, 50)
+            restart_text = restart_font.render("Press 'R' to Restart", True, (255, 255, 255))
+            screen.blit(restart_text, restart_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 50)))
 
         pygame.display.flip()
         clock.tick(60)
