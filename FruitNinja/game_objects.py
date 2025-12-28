@@ -1,10 +1,10 @@
+# game_objects.py
 import pygame
 import random
 import math
 import numpy as np
 import os
 
-# Constantes
 FRUIT_SIZE = 120
 RADIUS = FRUIT_SIZE // 2
 FRUIT_TYPES = ["apple", "banana", "orange", "watermelon", "fresa", "cherry", "coco"]
@@ -13,13 +13,9 @@ GRAVITY = 0.5
 LOADED_IMAGES = {}
 
 def load_images():
-    """Carga imágenes PNG usando Pygame directamente."""
     global LOADED_IMAGES
-    
-    # Obtener la ruta absoluta
     base_path = os.path.dirname(os.path.abspath(__file__))
 
-    # Estructura: "fruit_key": { "whole": path, "horizontal": [(h1, h2), ...], "vertical": ... }
     raw_mapping = {
         "apple": {
             "whole": "frutas/manzana/manzana_basic.png",
@@ -28,7 +24,6 @@ def load_images():
                 ("frutas/manzana/manzana_horizontal_up_cut_03.png", "frutas/manzana/manzana_horizontal_down_cut_04.png"),
                 ("frutas/manzana/manzana_horizontal3.png", "frutas/manzana/manzana_horizontal4.png")
             ],
-            # Apple fallbacks for vertical/diagonal (map to horizontal or vertical ones if exist)
             "vertical": [
                 ("frutas/manzana/manzana_vertical3.png", "frutas/manzana/manzana_verticla4.png")
             ],
@@ -95,28 +90,21 @@ def load_images():
             ]
         }
     }
-    
-    print("--- INTENTANDO CARGAR IMÁGENES ---")
-    
-    # helper loader
-    def load(path):
+
+    def load(path, size=(FRUIT_SIZE, FRUIT_SIZE)):
         parts = path.split("/")
         full_path = os.path.join(base_path, *parts)
         if os.path.exists(full_path):
             try:
                 img = pygame.image.load(full_path).convert_alpha()
-                img = pygame.transform.scale(img, (FRUIT_SIZE, FRUIT_SIZE))
+                img = pygame.transform.scale(img, size)
                 return img
             except:
                 return None
-        print(f"[FALTA] {path}")
         return None
 
     for fruit, data in raw_mapping.items():
-        # Load whole
         LOADED_IMAGES[f"{fruit}_whole"] = load(data["whole"])
-        
-        # Load variants
         for direction in ["horizontal", "vertical", "diagonal"]:
             variants = []
             for pair in data.get(direction, []):
@@ -124,23 +112,32 @@ def load_images():
                 img2 = load(pair[1])
                 if img1 and img2:
                     variants.append((img1, img2))
-            
             LOADED_IMAGES[f"{fruit}_{direction}_variants"] = variants
 
-    # Bomba
     LOADED_IMAGES["bomb"] = load("frutas/bomba/bomba00.png")
-    
-    # Explosion
     explosion_imgs = []
     for i in range(7):
         img = load(f"frutas/bomba/bomba0{i}.png")
-        if img: explosion_imgs.append(img)
+        if img:
+            explosion_imgs.append(img)
     LOADED_IMAGES["explosion_sequence"] = explosion_imgs
-            
+
+    LOADED_IMAGES["powerup"] = load("frutas/powerup/powerupp.png")
+
+    katana_frames = []
+    for i in range(6):
+        img = load(f"frutas/katana/katana0{i}.png", size=(300, 300))
+        if img:
+            katana_frames.append(img)
+
+    LOADED_IMAGES["katana_frames"] = katana_frames
+
+
+
     return LOADED_IMAGES
 
+
 class GameObject:
-    """Clase base para frutas y bombas."""
     def __init__(self, screen_width, screen_height):
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -163,40 +160,44 @@ class GameObject:
             self.speed_y += self.gravity
             if self.y > self.screen_height + 100:
                 self.active = False
-    
-    def check_cut(self, p1, p2):
+
+    def check_cut(self, p1, p2, extra_radius=0):
         if not self.active or self.sliced:
             return False
-        
-        center = np.array([self.x, self.y]) 
-        r = self.radius
+
+        center = np.array([self.x, self.y])
+        r = self.radius + extra_radius
         p1 = np.array(p1)
         p2 = np.array(p2)
-        v = p2 - p1 
-        w = center - p1 
+        v = p2 - p1
+        w = center - p1
         v_sqr = np.dot(v, v)
-        
+
         if v_sqr == 0:
             distance = math.dist(center, p1)
         else:
             t = np.dot(w, v) / v_sqr
-            if t < 0.0: closest_point = p1
-            elif t > 1.0: closest_point = p2
-            else: closest_point = p1 + t * v
+            if t < 0.0:
+                closest_point = p1
+            elif t > 1.0:
+                closest_point = p2
+            else:
+                closest_point = p1 + t * v
             distance = math.dist(center, closest_point)
 
         if distance < r:
             self.sliced = True
-            self.active = False 
+            self.active = False
             return True
         return False
+
 
 class Fruit(GameObject):
     def __init__(self, screen_width, screen_height):
         super().__init__(screen_width, screen_height)
         self.fruit_type = random.choice(FRUIT_TYPES)
         self.image = LOADED_IMAGES.get(f"{self.fruit_type}_whole")
-        self.color = (0, 255, 0) # Verde fallback
+        self.color = (0, 255, 0)
 
     def draw(self, screen):
         if self.active and not self.sliced:
@@ -205,11 +206,12 @@ class Fruit(GameObject):
             else:
                 pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
 
+
 class Bomb(GameObject):
     def __init__(self, screen_width, screen_height):
         super().__init__(screen_width, screen_height)
         self.image = LOADED_IMAGES.get("bomb")
-        self.color = (50, 50, 50) # Gris oscuro fallback
+        self.color = (50, 50, 50)
 
     def draw(self, screen):
         if self.active and not self.sliced:
@@ -219,28 +221,44 @@ class Bomb(GameObject):
                 pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
                 pygame.draw.circle(screen, (255, 0, 0), (int(self.x + 10), int(self.y - 10)), 5)
 
+
+class PowerUp(GameObject):
+    def __init__(self, screen_width, screen_height):
+        super().__init__(screen_width, screen_height)
+        self.image = LOADED_IMAGES.get("powerup")
+        self.color = (255, 255, 0)
+
+    def draw(self, screen):
+        if self.active and not self.sliced:
+            if self.image:
+                w, h = self.image.get_size()
+                screen.blit(self.image, (int(self.x - w // 2), int(self.y - h // 2)))
+            else:
+                pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+
+
 class Explosion:
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.frame = 0
-        self.animation_speed = 0.5 
+        self.animation_speed = 0.5
         self.finished = False
         self.images = LOADED_IMAGES.get("explosion_sequence", [])
-            
+
     def update(self):
         self.frame += self.animation_speed
         if self.frame >= len(self.images):
             self.finished = True
-            
+
     def draw(self, screen):
         if not self.finished and len(self.images) > 0:
             current = int(self.frame)
             if current < len(self.images):
                 img = self.images[current]
-                # Centrar
                 w, h = img.get_size()
-                screen.blit(img, (int(self.x - w//2), int(self.y - h//2)))
+                screen.blit(img, (int(self.x - w // 2), int(self.y - h // 2)))
+
 
 class CutFruit:
     def __init__(self, fruit, p1=None, p2=None):
@@ -248,11 +266,9 @@ class CutFruit:
         self.y = fruit.y
         self.radius = fruit.radius
         self.gravity = GRAVITY
-        self.lifetime = 60 
-        
-        # Determinar dirección de corte precisa
-        direction = "horizontal" # Default
-        
+        self.lifetime = 60
+
+        direction = "horizontal"
         if p1 and p2:
             dx = p2[0] - p1[0]
             dy = p2[1] - p1[1]
@@ -260,34 +276,21 @@ class CutFruit:
                 angle = 0
             else:
                 angle = math.degrees(math.atan2(dy, dx))
-            
-            # Normalize absolute angle for easy sector checking
             abs_angle = abs(angle)
-            
-            # Sectores
-            # Horizontal: [-30, 30] U [150, 180] (approx)
             if abs_angle < 30 or abs_angle > 150:
                 direction = "horizontal"
-            # Vertical: [60, 120]
             elif 60 < abs_angle < 120:
                 direction = "vertical"
-            # Diagonal: Resto ([30, 60] U [120, 150])
             else:
                 direction = "diagonal"
-        
-        # Seleccionar variante aleatoria
+
         variants = LOADED_IMAGES.get(f"{fruit.fruit_type}_{direction}_variants", [])
-        
-        # Fallback logic
         if not variants:
-            # Try horizontal as fallback
             variants = LOADED_IMAGES.get(f"{fruit.fruit_type}_horizontal_variants", [])
-            
+
         if variants:
-            # Choose random pair
             self.image_half1, self.image_half2 = random.choice(variants)
         else:
-            # Extreme fallback to original whole image
             self.image_half1 = fruit.image
             self.image_half2 = fruit.image
 
@@ -296,7 +299,7 @@ class CutFruit:
         self.half1_vx = fruit.speed_x - random.uniform(2, 5)
         self.half1_vy = fruit.speed_y - random.uniform(1, 3)
         self.half1_angle = 0
-        
+
         self.half2_x = fruit.x
         self.half2_y = fruit.y
         self.half2_vx = fruit.speed_x + random.uniform(2, 5)
@@ -308,24 +311,21 @@ class CutFruit:
         self.half1_y += self.half1_vy
         self.half1_vy += self.gravity
         self.half1_angle += 5
-        
+
         self.half2_x += self.half2_vx
         self.half2_y += self.half2_vy
         self.half2_vy += self.gravity
         self.half2_angle -= 5
-        
+
         self.lifetime -= 1
 
     def draw(self, screen):
         if self.lifetime > 0:
-            # Dibujar mitad 1
             if self.image_half1:
-                # Rotar imagen (opcional, para efecto visual)
                 img1 = pygame.transform.rotate(self.image_half1, self.half1_angle)
                 rect1 = img1.get_rect(center=(int(self.half1_x), int(self.half1_y)))
                 screen.blit(img1, rect1.topleft)
-            
-            # Dibujar mitad 2
+
             if self.image_half2:
                 img2 = pygame.transform.rotate(self.image_half2, self.half2_angle)
                 rect2 = img2.get_rect(center=(int(self.half2_x), int(self.half2_y)))
