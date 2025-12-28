@@ -4,7 +4,7 @@ import sys
 import math
 import random # Importante para la probabilidad
 from hand_tracker import HandTracker
-from game_objects import Fruit, CutFruit, Bomb, load_images # Importar Bomb
+from game_objects import Fruit, CutFruit, Bomb, Explosion, load_images # Importar Bomb y Explosion
 
 # Inicializar Pygame
 pygame.init()
@@ -37,6 +37,7 @@ tracker = HandTracker(detection_con=0.5, track_con=0.5, max_hands=1, model_compl
 # Game Objects
 game_objects = [] # Renombrado de 'fruits' a 'game_objects' para incluir bombas
 cut_fruits = []
+explosions = []
 SPAWN_EVENT = pygame.USEREVENT + 1
 pygame.time.set_timer(SPAWN_EVENT, 1000) 
 
@@ -124,11 +125,11 @@ def main():
                         # LÓGICA DIFERENCIADA BOMBA vs FRUTA
                         if isinstance(obj, Fruit):
                             score += 1
-                            cut_fruits.append(CutFruit(obj))
+                            cut_fruits.append(CutFruit(obj, last_index_pos, current_index_pos))
                         elif isinstance(obj, Bomb):
                             score -= 5 # Penalización por bomba
-                            # Opcional: Sonido de explosión o flash en pantalla
-                            # screen.fill((255, 255, 255)) 
+                            # Iniciar explosión
+                            explosions.append(Explosion(obj.x, obj.y)) 
             
             if not obj.active:
                 game_objects.remove(obj)
@@ -138,6 +139,13 @@ def main():
             c_fruit.draw(screen)
             if c_fruit.lifetime <= 0:
                 cut_fruits.remove(c_fruit)
+
+        # Update Explosions
+        for exp in explosions[:]:
+            exp.update()
+            exp.draw(screen)
+            if exp.finished:
+                explosions.remove(exp)
 
         # UI Score
         # Cambiar color si el puntaje es negativo
