@@ -5,9 +5,9 @@ import numpy as np
 import os
 
 # Constantes
-FRUIT_SIZE = 80
+FRUIT_SIZE = 120
 RADIUS = FRUIT_SIZE // 2
-FRUIT_TYPES = ["apple", "banana", "orange", "watermelon", "fresa", "cherry"]
+FRUIT_TYPES = ["apple", "banana", "orange", "watermelon", "fresa", "cherry", "coco"]
 GRAVITY = 0.5
 
 LOADED_IMAGES = {}
@@ -19,89 +19,129 @@ def load_images():
     # Obtener la ruta absoluta
     base_path = os.path.dirname(os.path.abspath(__file__))
 
-    image_paths = {
-        # Manzana (Solo tiene horizontal, se usará como fallback para todo)
-        "apple_whole": "frutas/manzana/manzana0.png",
-        "apple_horizontal_1": "frutas/manzana/apple_horizontal_up_cut_00.png",
-        "apple_horizontal_2": "frutas/manzana/apple_horizontal_down_cut_00.png",
-        # Fallbacks para apple vertical/diagonal mapeados a horizontal
-        "apple_vertical_1": "frutas/manzana/apple_horizontal_up_cut_00.png",
-        "apple_vertical_2": "frutas/manzana/apple_horizontal_down_cut_00.png",
-        "apple_diagonal_1": "frutas/manzana/apple_horizontal_up_cut_00.png",
-        "apple_diagonal_2": "frutas/manzana/apple_horizontal_down_cut_00.png",
-
-        # Platano
-        "banana_whole": "frutas/platano/platano00.png",
-        "banana_horizontal_1": "frutas/platano/platano_horizontal01.png",
-        "banana_horizontal_2": "frutas/platano/platano_horizontal02.png",
-        "banana_vertical_1": "frutas/platano/platano_vertical01.png",
-        "banana_vertical_2": "frutas/platano/platano_vertical02.png",
-        "banana_diagonal_1": "frutas/platano/platano_diagonal01.png",
-        "banana_diagonal_2": "frutas/platano/platano_diagonal02.png",
-        
-        # Naranja
-        "orange_whole": "frutas/naranja/orange00.png",
-        "orange_horizontal_1": "frutas/naranja/orange_horizontal_03.png",
-        "orange_horizontal_2": "frutas/naranja/orange_horizontal_04.png",
-        "orange_vertical_1": "frutas/naranja/orange_vertical_03.png",
-        "orange_vertical_2": "frutas/naranja/orange_vertical_04.png",
-        "orange_diagonal_1": "frutas/naranja/orange_diagonal_03.png",
-        "orange_diagonal_2": "frutas/naranja/orange_diagonal_04.png",
-        
-        # Sandia
-        "watermelon_whole": "frutas/sandia/watermelon_00.png",
-        "watermelon_horizontal_1": "frutas/sandia/watermelon_horizontal_02.png",
-        "watermelon_horizontal_2": "frutas/sandia/watermelon_horizontal_03.png",
-        "watermelon_vertical_1": "frutas/sandia/watermelon_vertical_02.png",
-        "watermelon_vertical_2": "frutas/sandia/watermelon_vertical_03.png",
-        "watermelon_diagonal_1": "frutas/sandia/watermelon_diagonal_02.png",
-        "watermelon_diagonal_2": "frutas/sandia/watermelon_diagonal_03.png",
-        
-        # Fresa
-        "fresa_whole": "frutas/fresa/strawberry_00.png",
-        "fresa_horizontal_1": "frutas/fresa/strawberry_horizontal_02.png",
-        "fresa_horizontal_2": "frutas/fresa/strawberry_horizontal_03.png",
-        "fresa_vertical_1": "frutas/fresa/strawberry_vertical_02.png",
-        "fresa_vertical_2": "frutas/fresa/strawberry_vertical_03.png",
-        "fresa_diagonal_1": "frutas/fresa/strawberry_diagonal_02.png",
-        "fresa_diagonal_2": "frutas/fresa/strawberry_diagonal_03.png",
-        
-        # Cereza
-        "cherry_whole": "frutas/cereza/cereza00.png",
-        "cherry_horizontal_1": "frutas/cereza/cereza_horizontal00.png",
-        "cherry_horizontal_2": "frutas/cereza/cereza_horizontal01.png",
-        "cherry_vertical_1": "frutas/cereza/cereza_vertical00.png",
-        "cherry_vertical_2": "frutas/cereza/cereza_vertical01.png",
-        "cherry_diagonal_1": "frutas/cereza/cereza_diagonal_01.png",
-        "cherry_diagonal_2": "frutas/cereza/cereza_diagonal_02.png",
-        
-        # Bomba
-        "bomb": "frutas/bomba/bomba00.png"
+    # Estructura: "fruit_key": { "whole": path, "horizontal": [(h1, h2), ...], "vertical": ... }
+    raw_mapping = {
+        "apple": {
+            "whole": "frutas/manzana/manzana_basic.png",
+            "horizontal": [
+                ("frutas/manzana/manzana_horizontal_up_cut_00.png", "frutas/manzana/manzana_horizontal_down_cut_00.png"),
+                ("frutas/manzana/manzana_horizontal_up_cut_01.png", "frutas/manzana/manzana_horizontal_down_cut_01.png"),
+                ("frutas/manzana/manzana_horizontal_up_cut_03.png", "frutas/manzana/manzana_horizontal_down_cut_03.png"),
+                ("frutas/manzana/manzana_horizontal0.png", "frutas/manzana/manzana_horizontal1.png"),
+                ("frutas/manzana/manzana_horizontal2.png", "frutas/manzana/manzana_horizontal3.png")
+            ],
+            # Apple fallbacks for vertical/diagonal (map to horizontal or vertical ones if exist)
+            "vertical": [
+                ("frutas/manzana/manzana_vertical0.png", "frutas/manzana/manzana_vertical2.png")
+            ],
+            "diagonal": [
+                ("frutas/manzana/manzana_horizontal_up_cut_00.png", "frutas/manzana/manzana_horizontal_down_cut_00.png")
+            ]
+        },
+        "coco": {
+            "whole": "frutas/coco/coco_base.png",
+            "horizontal": [
+                ("frutas/coco/coco_corte_lateral00.png", "frutas/coco/coco_corte_lateral01.png"),
+                ("frutas/coco/coco_corte_lateral02.png", "frutas/coco/coco_corte_lateral03.png")
+            ],
+            "vertical": [
+                ("frutas/coco/coco_corte_verticall00.png", "frutas/coco/coco_corte_verticall01.png"),
+                ("frutas/coco/coco_corte_verticall02.png", "frutas/coco/coco_corte_verticall03.png")
+            ],
+            "diagonal": [
+                ("frutas/coco/coco_diagonal00.png", "frutas/coco/coco_diagonal01.png"),
+                ("frutas/coco/coco_diagonal02.png", "frutas/coco/coco_diagonal03.png"),
+                ("frutas/coco/coco_diagonal04.png", "frutas/coco/coco_diagonal05.png"),
+                ("frutas/coco/coco_diagonal06.png", "frutas/coco/coco_diagonal07.png")
+            ]
+        },
+        "banana": {
+            "whole": "frutas/platano/platano00.png",
+            "horizontal": [("frutas/platano/platano_horizontal01.png", "frutas/platano/platano_horizontal02.png")],
+            "vertical": [("frutas/platano/platano_vertical01.png", "frutas/platano/platano_vertical02.png")],
+            "diagonal": [
+                ("frutas/platano/platano_diagonal01.png", "frutas/platano/platano_diagonal02.png"),
+                ("frutas/platano/platano_diagonal05.png", "frutas/platano/platano_diagonal06.png")
+            ]
+        },
+        "orange": {
+            "whole": "frutas/naranja/orange00.png",
+            "horizontal": [("frutas/naranja/orange_horizontal_03.png", "frutas/naranja/orange_horizontal_04.png")],
+            "vertical": [("frutas/naranja/orange_vertical_03.png", "frutas/naranja/orange_vertical_04.png")],
+            "diagonal": [
+                ("frutas/naranja/orange_diagonal_03.png", "frutas/naranja/orange_diagonal_04.png"),
+                ("frutas/naranja/orange_diagonal_07.png", "frutas/naranja/orange_diagonal_08.png")
+            ]
+        },
+        "watermelon": {
+            "whole": "frutas/sandia/watermelon_00.png",
+            "horizontal": [("frutas/sandia/watermelon_horizontal_02.png", "frutas/sandia/watermelon_horizontal_03.png")],
+            "vertical": [("frutas/sandia/watermelon_vertical_02.png", "frutas/sandia/watermelon_vertical_03.png")],
+            "diagonal": [
+                ("frutas/sandia/watermelon_diagonal_02.png", "frutas/sandia/watermelon_diagonal_03.png"),
+                ("frutas/sandia/watermelon_diagonal_07.png", "frutas/sandia/watermelon_diagonal_08.png")
+            ]
+        },
+        "fresa": {
+            "whole": "frutas/fresa/strawberry_00.png",
+            "horizontal": [("frutas/fresa/strawberry_horizontal_02.png", "frutas/fresa/strawberry_horizontal_03.png")],
+            "vertical": [("frutas/fresa/strawberry_vertical_02.png", "frutas/fresa/strawberry_vertical_03.png")],
+            "diagonal": [
+                ("frutas/fresa/strawberry_diagonal_02.png", "frutas/fresa/strawberry_diagonal_03.png"),
+                ("frutas/fresa/strawberry_diagonal_07.png", "frutas/fresa/strawberry_diagonal_08.png")
+            ]
+        },
+        "cherry": {
+            "whole": "frutas/cereza/cereza00.png",
+            "horizontal": [("frutas/cereza/cereza_horizontal00.png", "frutas/cereza/cereza_horizontal01.png")],
+            "vertical": [("frutas/cereza/cereza_vertical00.png", "frutas/cereza/cereza_vertical01.png")],
+            "diagonal": [
+                ("frutas/cereza/cereza_diagonal_01.png", "frutas/cereza/cereza_diagonal_02.png"),
+                ("frutas/cereza/cereza_diagonal_04.png", "frutas/cereza/cereza_diagonal_05.png")
+            ]
+        }
     }
     
-    # Cargar secuencia de explosión
-    for i in range(7):
-         # Asumiendo nombres bomba00.png a bomba06.png
-         image_paths[f"explosion_{i}"] = f"frutas/bomba/bomba0{i}.png"
-    
     print("--- INTENTANDO CARGAR IMÁGENES ---")
-    for key, filename in image_paths.items():
-        # Construir ruta usando os.path.join correctamente para subdirectorios
-        # Nota: filename ya incluye subdirectorios relativos separados por /,
-        # pero es mejor normalizarlo para el OS actual
-        parts = filename.split("/")
+    
+    # helper loader
+    def load(path):
+        parts = path.split("/")
         full_path = os.path.join(base_path, *parts)
-        
         if os.path.exists(full_path):
             try:
                 img = pygame.image.load(full_path).convert_alpha()
                 img = pygame.transform.scale(img, (FRUIT_SIZE, FRUIT_SIZE))
-                LOADED_IMAGES[key] = img
-                print(f"[OK] Cargada: {filename}")
-            except Exception as e:
-                print(f"[ERROR] No se pudo cargar {filename}: {e}")
-        else:
-            print(f"[FALTA] No se encuentra el archivo: {full_path}")
+                return img
+            except:
+                return None
+        print(f"[FALTA] {path}")
+        return None
+
+    for fruit, data in raw_mapping.items():
+        # Load whole
+        LOADED_IMAGES[f"{fruit}_whole"] = load(data["whole"])
+        
+        # Load variants
+        for direction in ["horizontal", "vertical", "diagonal"]:
+            variants = []
+            for pair in data.get(direction, []):
+                img1 = load(pair[0])
+                img2 = load(pair[1])
+                if img1 and img2:
+                    variants.append((img1, img2))
+            
+            LOADED_IMAGES[f"{fruit}_{direction}_variants"] = variants
+
+    # Bomba
+    LOADED_IMAGES["bomb"] = load("frutas/bomba/bomba00.png")
+    
+    # Explosion
+    explosion_imgs = []
+    for i in range(7):
+        img = load(f"frutas/bomba/bomba0{i}.png")
+        if img: explosion_imgs.append(img)
+    LOADED_IMAGES["explosion_sequence"] = explosion_imgs
             
     return LOADED_IMAGES
 
@@ -190,12 +230,9 @@ class Explosion:
         self.x = x
         self.y = y
         self.frame = 0
-        self.animation_speed = 0.5 # Velocidad de animación
+        self.animation_speed = 0.5 
         self.finished = False
-        self.images = []
-        for i in range(7):
-            img = LOADED_IMAGES.get(f"explosion_{i}")
-            if img: self.images.append(img)
+        self.images = LOADED_IMAGES.get("explosion_sequence", [])
             
     def update(self):
         self.frame += self.animation_speed
@@ -219,33 +256,46 @@ class CutFruit:
         self.gravity = GRAVITY
         self.lifetime = 60 
         
-        # Determinar dirección de corte
+        # Determinar dirección de corte precisa
         direction = "horizontal" # Default
+        
         if p1 and p2:
-            dx = abs(p2[0] - p1[0])
-            dy = abs(p2[1] - p1[1])
+            dx = p2[0] - p1[0]
+            dy = p2[1] - p1[1]
+            if dx == 0 and dy == 0:
+                angle = 0
+            else:
+                angle = math.degrees(math.atan2(dy, dx))
             
-            if dx > dy * 2:
+            # Normalize absolute angle for easy sector checking
+            abs_angle = abs(angle)
+            
+            # Sectores
+            # Horizontal: [-30, 30] U [150, 180] (approx)
+            if abs_angle < 30 or abs_angle > 150:
                 direction = "horizontal"
-            elif dy > dx * 2:
+            # Vertical: [60, 120]
+            elif 60 < abs_angle < 120:
                 direction = "vertical"
+            # Diagonal: Resto ([30, 60] U [120, 150])
             else:
                 direction = "diagonal"
         
-        # Cargar imágenes dependientes de la dirección
-        self.image_half1 = LOADED_IMAGES.get(f"{fruit.fruit_type}_{direction}_1")
-        self.image_half2 = LOADED_IMAGES.get(f"{fruit.fruit_type}_{direction}_2")
+        # Seleccionar variante aleatoria
+        variants = LOADED_IMAGES.get(f"{fruit.fruit_type}_{direction}_variants", [])
         
-        # Fallback si no se encuentra la exacta (aunque están mapeadas en load_images)
-        if not self.image_half1: 
-             # Intentar horizontal por defecto
-             self.image_half1 = LOADED_IMAGES.get(f"{fruit.fruit_type}_horizontal_1")
-        if not self.image_half2:
-             self.image_half2 = LOADED_IMAGES.get(f"{fruit.fruit_type}_horizontal_2")
-             
-        # Último recurso
-        if not self.image_half1: self.image_half1 = fruit.image
-        if not self.image_half2: self.image_half2 = fruit.image
+        # Fallback logic
+        if not variants:
+            # Try horizontal as fallback
+            variants = LOADED_IMAGES.get(f"{fruit.fruit_type}_horizontal_variants", [])
+            
+        if variants:
+            # Choose random pair
+            self.image_half1, self.image_half2 = random.choice(variants)
+        else:
+            # Extreme fallback to original whole image
+            self.image_half1 = fruit.image
+            self.image_half2 = fruit.image
 
         self.half1_x = fruit.x
         self.half1_y = fruit.y
