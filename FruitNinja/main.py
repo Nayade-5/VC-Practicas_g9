@@ -19,7 +19,7 @@ MIN_CUT_SPEED = 10
 
 KATANA_DURATION_FRAMES = 60 * 7
 KATANA_EXTRA_RADIUS = 35
-KATANA_INTRO_SPEED = 0.45
+KATANA_FPS = 18
 
 KNIFE_SIZE = (100, 100)
 KATANA_SIZE = (300, 300)
@@ -30,7 +30,7 @@ def resource_path(*parts):
     return os.path.join(base, *parts)
 
 
-def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana_frame, rotate=True):
+def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana_anim_idx, rotate=True):
     if len(points) > 1:
         pygame.draw.lines(surface, (200, 200, 255), False, points, 8)
         pygame.draw.lines(surface, (255, 255, 255), False, points, 4)
@@ -40,15 +40,10 @@ def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana
 
     x, y = points[-1]
 
+    img = knife_img
     if katana_active and katana_frames:
-        idx = int(katana_frame)
-        if idx < 0:
-            idx = 0
-        if idx >= len(katana_frames):
-            idx = len(katana_frames) - 1
+        idx = max(0, min(katana_anim_idx, len(katana_frames) - 1))
         img = katana_frames[idx]
-    else:
-        img = knife_img
 
     if rotate and len(points) > 1:
         x2, y2 = points[-2]
@@ -61,7 +56,10 @@ def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana
 
 def main():
     pygame.init()
-    pygame.mixer.init()
+    try:
+        pygame.mixer.init()
+    except:
+        pass
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Fruit Ninja Hand Controlled")
@@ -81,10 +79,14 @@ def main():
         slice_sound = None
         print("No se pudo cargar el sonido de corte.")
 
+    try:
+        katana_sound = pygame.mixer.Sound(resource_path("soundtrack", "sword.wav"))
+        katana_sound.set_volume(0.5)
+    except:
+        katana_sound = None
+        print("No se pudo cargar el sonido de katana.")
+
     load_images()
-    katana_frames = LOADED_IMAGES.get("katana_frames", [])
-    if katana_frames:
-        katana_frames = [pygame.transform.scale(img, (300, 300)) for img in katana_frames]
 
     knife_path = resource_path("frutas", "knife", "knife.png")
     knife_img = pygame.image.load(knife_path).convert_alpha()
@@ -119,13 +121,16 @@ def main():
 
     katana_active = False
     katana_timer = 0
-    katana_frame = 0.0
+    katana_anim_idx = 5
+    katana_anim_acc = 0.0
 
     SPAWN_EVENT = pygame.USEREVENT + 1
     pygame.time.set_timer(SPAWN_EVENT, SPAWN_EVERY_MS)
 
     running = True
     while running:
+        dt = clock.tick(60) / 1000.0
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -151,7 +156,8 @@ def main():
                     last_index_pos = (0, 0)
                     katana_active = False
                     katana_timer = 0
-                    katana_frame = 0.0
+                    katana_anim_idx = 5
+                    katana_anim_acc = 0.0
                     try:
                         pygame.mixer.music.play(-1)
                     except:
@@ -184,24 +190,35 @@ def main():
                 blade_points.pop(0)
             current_index_pos = (0, 0)
 
-        if katana_active:
+        if katana_active and katana_frames:
             katana_timer -= 1
-            if katana_frame < 5.0:
-                katana_frame += KATANA_INTRO_SPEED
-                if katana_frame > 5.0:
-                    katana_frame = 5.0
+
+            if katana_anim_idx < 5:
+                katana_anim_acc += KATANA_FPS * dt
+                while katana_anim_acc >= 1.0:
+                    katana_anim_acc -= 1.0
+                    katana_anim_idx += 1
+                    if katana_anim_idx >= 5:
+                        katana_anim_idx = 5
+                        katana_anim_acc = 0.0
+                        break
+            else:
+                katana_anim_acc = 0.0
+
             if katana_timer <= 0:
                 katana_active = False
-                katana_frame = 0.0
+                katana_anim_idx = 5
+                katana_anim_acc = 0.0
         else:
-            katana_frame = 0.0
+            katana_anim_idx = 5
+            katana_anim_acc = 0.0
 
         if background:
             screen.blit(background, (0, 0))
         else:
             screen.fill((50, 50, 50))
 
-        draw_weapon(screen, blade_points, knife_img, katana_frames, katana_active, katana_frame, rotate=True)
+        draw_weapon(screen, blade_points, knife_img, katana_frames, katana_active, katana_anim_idx, rotate=True)
 
         extra_radius = KATANA_EXTRA_RADIUS if katana_active else 0
 
@@ -216,13 +233,18 @@ def main():
                             if isinstance(obj, Fruit):
                                 score += 1
                                 cut_fruits.append(CutFruit(obj, last_index_pos, current_index_pos))
-                                if slice_sound:
-                                    slice_sound.play()
+                                if katana_active:
+                                    if katana_sound:
+                                        katana_sound.play()
+                                else:
+                                    if slice_sound:
+                                        slice_sound.play()
 
                             elif isinstance(obj, PowerUp):
                                 katana_active = True
                                 katana_timer = KATANA_DURATION_FRAMES
-                                katana_frame = 0.0
+                                katana_anim_idx = 0
+                                katana_anim_acc = 0.0
 
                             elif isinstance(obj, Bomb):
                                 game_over = True
@@ -266,7 +288,6 @@ def main():
             screen.blit(restart_text, restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)))
 
         pygame.display.flip()
-        clock.tick(60)
 
     cap.release()
     pygame.quit()
