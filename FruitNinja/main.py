@@ -27,7 +27,7 @@ except FileNotFoundError:
     background = None
 
 # Camera setup
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(3, SCREEN_WIDTH)
 cap.set(4, SCREEN_HEIGHT)
 
@@ -60,17 +60,28 @@ def main():
     last_index_pos = (0, 0)
     smooth_factor = 0.6
     
+    game_over = False
+
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == SPAWN_EVENT:
+            elif event.type == SPAWN_EVENT and not game_over:
                 # 20% de probabilidad de que sea una bomba
                 if random.random() < 0.2: 
                     game_objects.append(Bomb(SCREEN_WIDTH, SCREEN_HEIGHT))
                 else:
                     game_objects.append(Fruit(SCREEN_WIDTH, SCREEN_HEIGHT))
+            elif event.type == pygame.KEYDOWN and game_over:
+                if event.key == pygame.K_r:
+                    # RESTART
+                    game_over = False
+                    score = 0
+                    game_objects.clear()
+                    cut_fruits.clear()
+                    explosions.clear()
+                    blade_points.clear()
 
         success, img = cap.read()
         if not success:
@@ -112,35 +123,43 @@ def main():
         draw_blade(screen, blade_points)
 
         # Update Game Objects (Frutas y Bombas)
-        for obj in game_objects[:]:
-            obj.move()
-            obj.draw(screen)
-            
-            if hand_point and last_index_pos != (0, 0) and current_index_pos != (0, 0):
-                cut_speed = math.dist(last_index_pos, current_index_pos)
+        if not game_over:
+            for obj in game_objects[:]:
+                obj.move()
+                obj.draw(screen)
                 
-                if cut_speed > 10:
-                    if obj.check_cut(last_index_pos, current_index_pos):
-                        
-                        # LÓGICA DIFERENCIADA BOMBA vs FRUTA
-                        if isinstance(obj, Fruit):
-                            score += 1
-                            cut_fruits.append(CutFruit(obj, last_index_pos, current_index_pos))
-                        elif isinstance(obj, Bomb):
-                            score -= 5 # Penalización por bomba
-                            # Iniciar explosión
-                            explosions.append(Explosion(obj.x, obj.y)) 
-            
-            if not obj.active:
-                game_objects.remove(obj)
+                if hand_point and last_index_pos != (0, 0) and current_index_pos != (0, 0):
+                    cut_speed = math.dist(last_index_pos, current_index_pos)
+                    
+                    if cut_speed > 10:
+                        if obj.check_cut(last_index_pos, current_index_pos):
+                            
+                            # LÓGICA DIFERENCIADA BOMBA vs FRUTA
+                            if isinstance(obj, Fruit):
+                                score += 1
+                                cut_fruits.append(CutFruit(obj, last_index_pos, current_index_pos))
+                            elif isinstance(obj, Bomb):
+                                # GAME OVER
+                                game_over = True
+                                # Iniciar explosión visual antes de parar
+                                explosions.append(Explosion(obj.x, obj.y)) 
+                
+                if not obj.active:
+                    game_objects.remove(obj)
 
-        for c_fruit in cut_fruits[:]:
-            c_fruit.move()
-            c_fruit.draw(screen)
-            if c_fruit.lifetime <= 0:
-                cut_fruits.remove(c_fruit)
+            for c_fruit in cut_fruits[:]:
+                c_fruit.move()
+                c_fruit.draw(screen)
+                if c_fruit.lifetime <= 0:
+                    cut_fruits.remove(c_fruit)
+        else:
+            # Si es Game Over, solo dibujamos lo estático o las explosiones finales
+            for obj in game_objects:
+                obj.draw(screen) # Dibujar congelados
+            for c_fruit in cut_fruits:
+                c_fruit.draw(screen) # Dibujar congelados
 
-        # Update Explosions
+        # Update Explosions (Siempre actualizar para que terminen)
         for exp in explosions[:]:
             exp.update()
             exp.draw(screen)
@@ -156,6 +175,18 @@ def main():
         if not lm_list:
             warn_text = font.render("Mano no detectada", True, (255, 100, 100))
             screen.blit(warn_text, (SCREEN_WIDTH//2 - 150, SCREEN_HEIGHT - 50))
+
+        if game_over:
+            # Game Over UI
+            over_font = pygame.font.Font(None, 100)
+            over_text = over_font.render("GAME OVER", True, (255, 50, 50))
+            over_rect = over_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 20))
+            screen.blit(over_text, over_rect)
+            
+            restart_font = pygame.font.Font(None, 50)
+            restart_text = restart_font.render("Press 'R' to Restart", True, (255, 255, 255))
+            restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 50))
+            screen.blit(restart_text, restart_rect)
 
         pygame.display.flip()
         clock.tick(60)

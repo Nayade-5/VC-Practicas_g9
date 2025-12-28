@@ -30,7 +30,7 @@ def load_images():
             ],
             # Apple fallbacks for vertical/diagonal (map to horizontal or vertical ones if exist)
             "vertical": [
-                ("frutas/manzana/manzana_vertical3.png", "frutas/manzana/manzana_vertical4.png")
+                ("frutas/manzana/manzana_vertical3.png", "frutas/manzana/manzana_verticla4.png")
             ],
             "diagonal": [
                 ("frutas/manzana/manzana_horizontal_up_cut_02.png", "frutas/manzana/manzana_horizontal_up_cut_03.png")
