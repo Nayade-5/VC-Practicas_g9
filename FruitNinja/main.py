@@ -8,8 +8,8 @@ import cv2
 from hand_tracker import HandTracker
 from game_objects import Fruit, CutFruit, Bomb, Explosion, PowerUp, load_images, LOADED_IMAGES
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
 MAX_BLADE_POINTS = 15
 SMOOTH_FACTOR = 0.6
 BOMB_PROB = 0.2
