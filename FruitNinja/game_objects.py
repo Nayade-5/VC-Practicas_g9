@@ -153,13 +153,14 @@ class GameObject:
         self.active = True
         self.sliced = False
 
-    def move(self):
+    def move(self, speed_mult=1.0):
         if self.active:
-            self.x += self.speed_x
-            self.y += self.speed_y
+            self.x += self.speed_x * speed_mult
+            self.y += self.speed_y * speed_mult
             self.speed_y += self.gravity
             if self.y > self.screen_height + 100:
                 self.active = False
+
 
     def check_cut(self, p1, p2, extra_radius=0):
         if not self.active or self.sliced:
@@ -306,18 +307,19 @@ class CutFruit:
         self.half2_vy = fruit.speed_y - random.uniform(1, 3)
         self.half2_angle = 0
 
-    def move(self):
-        self.half1_x += self.half1_vx
-        self.half1_y += self.half1_vy
-        self.half1_vy += self.gravity
-        self.half1_angle += 5
+    def move(self, speed_mult=1.0):
+        self.half1_x += self.half1_vx * speed_mult
+        self.half1_y += self.half1_vy * speed_mult
+        self.half1_vy += self.gravity * speed_mult
+        self.half1_angle += 5 * speed_mult
 
-        self.half2_x += self.half2_vx
-        self.half2_y += self.half2_vy
-        self.half2_vy += self.gravity
-        self.half2_angle -= 5
+        self.half2_x += self.half2_vx * speed_mult
+        self.half2_y += self.half2_vy * speed_mult
+        self.half2_vy += self.gravity * speed_mult
+        self.half2_angle -= 5 * speed_mult
 
         self.lifetime -= 1
+
 
     def draw(self, screen):
         if self.lifetime > 0:

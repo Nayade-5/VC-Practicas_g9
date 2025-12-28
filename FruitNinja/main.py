@@ -15,7 +15,7 @@ SCREEN_HEIGHT = 720
 MAX_BLADE_POINTS = 15
 SMOOTH_FACTOR = 0.6
 BOMB_PROB = 0.2
-POWERUP_PROB = 0.08
+POWERUP_PROB = 0.04
 SPAWN_EVERY_MS = 1000
 MIN_CUT_SPEED = 10
 
@@ -110,7 +110,7 @@ def loading_worker():
 
     # 4. Cámara (Lento)
     print("Iniciando cámara...")
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     cap.set(3, SCREEN_WIDTH)
     cap.set(4, SCREEN_HEIGHT)
     cap.read() 
@@ -226,6 +226,15 @@ def main():
     cut_fruits = []
     explosions = []
     score = 0
+        # ---- TIMER / DIFICULTAD ----
+    round_time = 0.0  # segundos jugados en esta ronda
+    timer_font = pygame.font.Font(None, 48)
+
+    # Parámetros de escalado (ajústalos a tu gusto)
+    SPEED_MULT_START = 1.0
+    SPEED_MULT_MAX = 2.5         # límite de velocidad
+    SPEED_RAMP_PER_SEC = 0.015   # cuánto sube por segundo (0.015 => +0.9 en 60s)
+
     font = pygame.font.Font(None, 48)
     blade_points = []
     current_index_pos = (0, 0)
@@ -243,6 +252,12 @@ def main():
     running = True
     while running:
         dt = clock.tick(60) / 1000.0
+        if not game_over:
+            round_time += dt
+        speed_mult = SPEED_MULT_START + round_time * SPEED_RAMP_PER_SEC
+        if speed_mult > SPEED_MULT_MAX:
+            speed_mult = SPEED_MULT_MAX
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -259,6 +274,7 @@ def main():
 
             elif event.type == pygame.KEYDOWN and game_over:
                 if event.key == pygame.K_r:
+                    round_time = 0.0
                     game_over = False
                     score = 0
                     game_objects.clear()
@@ -332,7 +348,7 @@ def main():
 
         if not game_over:
             for obj in game_objects[:]:
-                obj.move()
+                obj.move(speed_mult)
                 obj.draw(screen)
 
                 if current_index_pos != (0, 0) and last_index_pos != (0, 0):
@@ -383,6 +399,11 @@ def main():
             restart_font = pygame.font.Font(None, 50)
             restart_text = restart_font.render("Press 'R' to Restart", True, (255, 255, 255))
             screen.blit(restart_text, restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)))
+
+        mins = int(round_time) // 60
+        secs = int(round_time) % 60
+        time_text = timer_font.render(f"Time: {mins:02d}:{secs:02d}", True, (255, 255, 255))
+        screen.blit(time_text, (20, 70))
 
         pygame.display.flip()
 
