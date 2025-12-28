@@ -20,14 +20,14 @@ clock = pygame.time.Clock()
 
 # Load Background
 try:
-    background = pygame.image.load("background.png").convert()
+    background = pygame.image.load("./background.png").convert()
     background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 except FileNotFoundError:
     print("Background image not found. Using solid color.")
     background = None
 
 # Camera setup
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cap.set(3, SCREEN_WIDTH)
 cap.set(4, SCREEN_HEIGHT)
 
