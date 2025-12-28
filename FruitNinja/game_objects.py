@@ -24,34 +24,28 @@ def load_images():
         "apple": {
             "whole": "frutas/manzana/manzana_basic.png",
             "horizontal": [
-                ("frutas/manzana/manzana_horizontal_up_cut_00.png", "frutas/manzana/manzana_horizontal_down_cut_00.png"),
-                ("frutas/manzana/manzana_horizontal_up_cut_01.png", "frutas/manzana/manzana_horizontal_down_cut_01.png"),
-                ("frutas/manzana/manzana_horizontal_up_cut_03.png", "frutas/manzana/manzana_horizontal_down_cut_03.png"),
-                ("frutas/manzana/manzana_horizontal0.png", "frutas/manzana/manzana_horizontal1.png"),
-                ("frutas/manzana/manzana_horizontal2.png", "frutas/manzana/manzana_horizontal3.png")
+                ("frutas/manzana/manzana_horizontal_up_cut_02.png", "frutas/manzana/manzana_horizontal_down_cut_03.png"),
+                ("frutas/manzana/manzana_horizontal_up_cut_03.png", "frutas/manzana/manzana_horizontal_down_cut_04.png"),
+                ("frutas/manzana/manzana_horizontal3.png", "frutas/manzana/manzana_horizontal4.png")
             ],
             # Apple fallbacks for vertical/diagonal (map to horizontal or vertical ones if exist)
             "vertical": [
-                ("frutas/manzana/manzana_vertical0.png", "frutas/manzana/manzana_vertical2.png")
+                ("frutas/manzana/manzana_vertical3.png", "frutas/manzana/manzana_vertical4.png")
             ],
             "diagonal": [
-                ("frutas/manzana/manzana_horizontal_up_cut_00.png", "frutas/manzana/manzana_horizontal_down_cut_00.png")
+                ("frutas/manzana/manzana_horizontal_up_cut_02.png", "frutas/manzana/manzana_horizontal_up_cut_03.png")
             ]
         },
         "coco": {
             "whole": "frutas/coco/coco_base.png",
             "horizontal": [
-                ("frutas/coco/coco_corte_lateral00.png", "frutas/coco/coco_corte_lateral01.png"),
                 ("frutas/coco/coco_corte_lateral02.png", "frutas/coco/coco_corte_lateral03.png")
             ],
             "vertical": [
-                ("frutas/coco/coco_corte_verticall00.png", "frutas/coco/coco_corte_verticall01.png"),
-                ("frutas/coco/coco_corte_verticall02.png", "frutas/coco/coco_corte_verticall03.png")
+                ("frutas/coco/coco_corte_verticall03.png", "frutas/coco/coco_corte_verticall04.png")
             ],
             "diagonal": [
-                ("frutas/coco/coco_diagonal00.png", "frutas/coco/coco_diagonal01.png"),
                 ("frutas/coco/coco_diagonal02.png", "frutas/coco/coco_diagonal03.png"),
-                ("frutas/coco/coco_diagonal04.png", "frutas/coco/coco_diagonal05.png"),
                 ("frutas/coco/coco_diagonal06.png", "frutas/coco/coco_diagonal07.png")
             ]
         },
@@ -69,7 +63,7 @@ def load_images():
             "horizontal": [("frutas/naranja/orange_horizontal_03.png", "frutas/naranja/orange_horizontal_04.png")],
             "vertical": [("frutas/naranja/orange_vertical_03.png", "frutas/naranja/orange_vertical_04.png")],
             "diagonal": [
-                ("frutas/naranja/orange_diagonal_03.png", "frutas/naranja/orange_diagonal_04.png"),
+                ("frutas/naranja/orange_diagonal_02.png", "frutas/naranja/orange_diagonal_03.png"),
                 ("frutas/naranja/orange_diagonal_07.png", "frutas/naranja/orange_diagonal_08.png")
             ]
         },
