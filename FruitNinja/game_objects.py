@@ -126,7 +126,7 @@ def load_images():
 
     katana_frames = []
     for i in range(6):
-        img = load(f"frutas/katana/katana{i}.png", size=(300, 300))
+        img = load(f"frutas/katana/katana0{i}.png", size=(300, 300))
         if img:
             katana_frames.append(img)
 

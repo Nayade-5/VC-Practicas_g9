@@ -103,7 +103,7 @@ def main():
         background = pygame.image.load(bg_path).convert()
         background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     cap.set(3, SCREEN_WIDTH)
     cap.set(4, SCREEN_HEIGHT)
 
