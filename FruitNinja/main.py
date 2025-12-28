@@ -9,10 +9,10 @@ import time
 from hand_tracker import HandTracker
 from game_objects import Fruit, CutFruit, Bomb, Explosion, PowerUp, load_images, LOADED_IMAGES
 
-# --- CONFIGURACIÓN GLOBAL ---
+# Variables Globales
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-MAX_BLADE_POINTS = 15
+MAX_BLADE_POINTS = 25
 SMOOTH_FACTOR = 0.6
 BOMB_PROB = 0.2
 POWERUP_PROB = 0.04
@@ -26,16 +26,18 @@ KATANA_FPS = 18
 KNIFE_SIZE = (100, 100)
 KATANA_SIZE = (300, 300)
 
-# --- VARIABLES GLOBALES PARA LA CARGA ---
+
 loading_done = False
 loaded_resources = {}
 
 def resource_path(*parts):
+    """Devuelve la ruta completa de un archivo de recurso"""
     base = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base, *parts)
 
-# --- FUNCIÓN AUXILIAR: DIBUJAR TEXTO ESTILO "FRUIT NINJA" ---
+
 def draw_fruit_ninja_text(surface, text, x, y, font_size=60):
+    """Formatear texto con estilo Fruit Ninja"""
     try:
         font_names = ["arialblack", "impact", "verdata", "arial"]
         font = pygame.font.SysFont(font_names, font_size, bold=True)
@@ -55,12 +57,13 @@ def draw_fruit_ninja_text(surface, text, x, y, font_size=60):
     main_rect = main_txt.get_rect(center=(x, y))
     surface.blit(main_txt, main_rect)
 
-# --- WORKER: HILO DE CARGA PESADA ---
+
 def loading_worker():
+    """Carga los recursos en segundo plano"""
     global loading_done, loaded_resources
-    print("--- Inicio de carga en segundo plano ---")
+    print("Se inicia la carga en segundo plano")
     
-    # 1. Audio
+    # Audio
     try:
         pygame.mixer.music.load(resource_path("soundtrack", "01. Welcome, Fruit Ninja.mp3"))
         pygame.mixer.music.set_volume(0.2)
@@ -83,10 +86,10 @@ def loading_worker():
     except:
         loaded_resources['katana_sound'] = None
 
-    # 2. Imágenes
+    # Imágenes
     load_images()
     
-    # 3. Cuchillo y Katana Frames
+    # Cuchillo y Katana Frames
     try:
         knife_path = resource_path("frutas", "knife", "knife.png")
         knife_img = pygame.image.load(knife_path).convert_alpha()
@@ -108,23 +111,24 @@ def loading_worker():
     else:
         loaded_resources['background'] = None
 
-    # 4. Cámara (Lento)
+    # Cámara (Lento)
     print("Iniciando cámara...")
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     cap.set(3, SCREEN_WIDTH)
     cap.set(4, SCREEN_HEIGHT)
     cap.read() 
     loaded_resources['cap'] = cap
     
-    print("--- Carga finalizada ---")
+    print("Carga finalizada")
     loading_done = True
 
-# --- BUCLE DE PANTALLA DE CARGA ---
+
 def run_splash_screen_loop(screen, clock):
+    """Función que ejecuta el bucle de la pantalla de carga """
     global loading_done
     
     try:
-        splash_path = resource_path("SPALSH_SCREEN.jpeg")
+        splash_path = resource_path("SPLASH_SCREEN.jpeg")
         splash_img = pygame.image.load(splash_path).convert_alpha()
         img_rect = splash_img.get_rect()
         img_ratio = img_rect.width / img_rect.height
@@ -164,17 +168,69 @@ def run_splash_screen_loop(screen, clock):
             dot_timer = time.time()
             
         loading_text = "CARGANDO" + "." * num_dots
-        draw_fruit_ninja_text(screen, loading_text, SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
+        draw_fruit_ninja_text(screen, loading_text, SCREEN_WIDTH // 2, 100)
         
         pygame.display.flip()
         clock.tick(30)
         
     loader_thread.join()
 
+def draw_dynamic_trail(surface, points, color_inner, color_outer, max_width=20):
+    """Dibuja una estela elegante detrás del dedo"""
+    if len(points) < 2:
+        return
+
+
+    left_points = []
+    right_points = []
+    n = len(points)
+    
+    for i in range(n):
+        # Calcular grosor
+        progress = i / (n - 1)
+        width = max_width * progress 
+        
+        # Calcular vector tangente
+        if i < n - 1:
+            dx = points[i+1][0] - points[i][0]
+            dy = points[i+1][1] - points[i][1]
+        else:
+            dx = points[i][0] - points[i-1][0]
+            dy = points[i][1] - points[i-1][1]
+            
+        length = math.hypot(dx, dy)
+        if length == 0:
+            nx, ny = 0, 0
+        else:
+            # Normal perpendicular (-dy, dx)
+            nx = -dy / length
+            ny = dx / length
+            
+        x, y = points[i]
+        left_points.append((x + nx * width, y + ny * width))
+        right_points.append((x - nx * width, y - ny * width))
+        
+    polygon_points = left_points + right_points[::-1]
+    
+    if len(polygon_points) > 2:
+        pygame.draw.polygon(surface, color_outer, polygon_points)
+        pygame.draw.lines(surface, color_inner, False, points, 2)
+
 def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana_anim_idx, rotate=True):
     if len(points) > 1:
-        pygame.draw.lines(surface, (200, 200, 255), False, points, 8)
-        pygame.draw.lines(surface, (255, 255, 255), False, points, 4)
+        if katana_active:
+            # Katana 
+            color_inner = (220, 255, 255) # Azul celeste
+            color_outer = (0, 255, 255) # Azul brillante
+            width = 30
+        else:
+            # Cuchillo
+            color_inner = (255, 255, 200) # Dorado
+            color_outer = (255, 69, 0) # Rojo muy vivo
+            width = 15
+
+        draw_dynamic_trail(surface, points, color_inner, color_outer, max_width=width)
+
 
     if not points:
         return
@@ -201,15 +257,15 @@ def main():
     except:
         pass
 
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
     pygame.display.set_caption("Visual Fruit Ninja")
     clock = pygame.time.Clock()
     pygame.mouse.set_visible(False)
 
-    # EJECUTAR CARGA
+    # Se ejecuta la carga de la pantalla Splash
     run_splash_screen_loop(screen, clock)
 
-    # RECUPERAR RECURSOS
+    # Se recuperan los recursos cargados
     if loaded_resources.get('music_loaded'):
         pygame.mixer.music.play(-1)
     
@@ -220,20 +276,20 @@ def main():
     background = loaded_resources.get('background')
     cap = loaded_resources.get('cap')
 
-    # SETUP JUEGO
+    # Se ejecuta el setup del juego
     tracker = HandTracker(detection_con=0.5, track_con=0.5, max_hands=1, model_complexity=0)
     game_objects = []
     cut_fruits = []
     explosions = []
     score = 0
-        # ---- TIMER / DIFICULTAD ----
+    # Timer para dificultad
     round_time = 0.0  # segundos jugados en esta ronda
     timer_font = pygame.font.Font(None, 48)
 
-    # Parámetros de escalado (ajústalos a tu gusto)
+    # Parámetros de escalado
     SPEED_MULT_START = 1.0
-    SPEED_MULT_MAX = 2.5         # límite de velocidad
-    SPEED_RAMP_PER_SEC = 0.015   # cuánto sube por segundo (0.015 => +0.9 en 60s)
+    SPEED_MULT_MAX = 2.5
+    SPEED_RAMP_PER_SEC = 0.015   
 
     font = pygame.font.Font(None, 48)
     blade_points = []
@@ -245,6 +301,13 @@ def main():
     katana_timer = 0
     katana_anim_idx = 5
     katana_anim_acc = 0.0
+
+    # Estados del juego
+    paused = False
+    bomb_hit_active = False
+    bomb_hit_timer = 0
+    powerup_hit_active = False
+    powerup_hit_timer = 0
 
     SPAWN_EVENT = pygame.USEREVENT + 1
     pygame.time.set_timer(SPAWN_EVENT, SPAWN_EVERY_MS)
@@ -263,7 +326,7 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-            elif event.type == SPAWN_EVENT and not game_over:
+            elif event.type == SPAWN_EVENT and not game_over and not paused and not bomb_hit_active and not powerup_hit_active:
                 r = random.random()
                 if r < POWERUP_PROB:
                     game_objects.append(PowerUp(SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -272,8 +335,12 @@ def main():
                 else:
                     game_objects.append(Fruit(SCREEN_WIDTH, SCREEN_HEIGHT))
 
-            elif event.type == pygame.KEYDOWN and game_over:
-                if event.key == pygame.K_r:
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif event.key == pygame.K_p:
+                    paused = not paused
+                elif game_over and event.key == pygame.K_r:
                     round_time = 0.0
                     game_over = False
                     score = 0
@@ -287,6 +354,14 @@ def main():
                     katana_timer = 0
                     katana_anim_idx = 5
                     katana_anim_acc = 0.0
+                    
+                    # Reset nuevos estados
+                    paused = False
+                    bomb_hit_active = False
+                    bomb_hit_timer = 0
+                    powerup_hit_active = False
+                    powerup_hit_timer = 0
+
                     if loaded_resources.get('music_loaded'): 
                         try: pygame.mixer.music.play(-1)
                         except: pass
@@ -315,7 +390,7 @@ def main():
             if blade_points: blade_points.pop(0)
             current_index_pos = (0, 0)
 
-        # Lógica de Katana
+        # Control de la Katana
         if katana_active and katana_frames:
             katana_timer -= 1
             if katana_anim_idx < 5:
@@ -346,7 +421,21 @@ def main():
 
         extra_radius = KATANA_EXTRA_RADIUS if katana_active else 0
 
-        if not game_over:
+        # Gestionar el timer para efectos de bomba y powerup
+        if bomb_hit_active:
+            bomb_hit_timer -= 1
+            if bomb_hit_timer <= 0:
+                bomb_hit_active = False
+                game_over = True
+        
+        if powerup_hit_active:
+            powerup_hit_timer -= 1
+            if powerup_hit_timer <= 0:
+                powerup_hit_active = False
+
+        frozen_mode = paused or bomb_hit_active or powerup_hit_active
+
+        if not game_over and not frozen_mode:
             for obj in game_objects[:]:
                 obj.move(speed_mult)
                 obj.draw(screen)
@@ -363,14 +452,20 @@ def main():
                                     if slice_sound: slice_sound.play()
 
                             elif isinstance(obj, PowerUp):
+                                powerup_hit_active = True
+                                powerup_hit_timer = 60 # 1 segundo aprox
                                 katana_active = True
                                 katana_timer = KATANA_DURATION_FRAMES
                                 katana_anim_idx = 0
                                 katana_anim_acc = 0.0
 
                             elif isinstance(obj, Bomb):
-                                game_over = True
-                                explosions.append(Explosion(obj.x, obj.y))
+                                # Activamos slow motion en vez de game over inmediato
+                                bomb_hit_active = True
+                                bomb_hit_timer = 60 
+                                exp = Explosion(obj.x, obj.y)
+                                exp.animation_speed = 0.1 
+                                explosions.append(exp)
                                 try: pygame.mixer.music.stop()
                                 except: pass
 
@@ -385,7 +480,9 @@ def main():
             for c_fruit in cut_fruits: c_fruit.draw(screen)
 
         for exp in explosions[:]:
-            exp.update(); exp.draw(screen)
+            if not paused:
+                exp.update()
+            exp.draw(screen)
             if exp.finished: explosions.remove(exp)
 
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
@@ -400,10 +497,25 @@ def main():
             restart_text = restart_font.render("Press 'R' to Restart", True, (255, 255, 255))
             screen.blit(restart_text, restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)))
 
+        elif paused:
+            pause_font = pygame.font.Font(None, 100)
+            pause_text = pause_font.render("PAUSED", True, (255, 255, 0))
+            screen.blit(pause_text, pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)))
+
+        if powerup_hit_active:
+            pw_font = pygame.font.Font(None, 80)
+            pw_text = pw_font.render("KATANA POWER!", True, (0, 255, 255))
+            screen.blit(pw_text, pw_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3)))
+
         mins = int(round_time) // 60
         secs = int(round_time) % 60
         time_text = timer_font.render(f"Time: {mins:02d}:{secs:02d}", True, (255, 255, 255))
         screen.blit(time_text, (20, 70))
+
+        # Pausar y salir
+        hud_font = pygame.font.Font(None, 30)
+        hud_text = hud_font.render("ESC: Exit | P: Pause", True, (200, 200, 200))
+        screen.blit(hud_text, (20, SCREEN_HEIGHT - 40))
 
         pygame.display.flip()
 

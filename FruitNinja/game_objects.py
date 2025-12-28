@@ -13,6 +13,7 @@ GRAVITY = 0.5
 LOADED_IMAGES = {}
 
 def load_images():
+    # """Función encargada de encontrar los recursos de los elementos del juego"""
     global LOADED_IMAGES
     base_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -92,6 +93,7 @@ def load_images():
     }
 
     def load(path, size=(FRUIT_SIZE, FRUIT_SIZE)):
+        """Función encargada de cargar las imágenes"""
         parts = path.split("/")
         full_path = os.path.join(base_path, *parts)
         if os.path.exists(full_path):
@@ -138,12 +140,15 @@ def load_images():
 
 
 class GameObject:
+    """Clase base para los objetos del juego"""
+
     def __init__(self, screen_width, screen_height):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.reset_physics()
 
     def reset_physics(self):
+        """Función encargada de resetear las caracteristicas de un objeto"""
         self.x = random.randint(100, self.screen_width - 100)
         self.y = self.screen_height + 50
         self.speed_x = random.uniform(-4, 4)
@@ -154,6 +159,7 @@ class GameObject:
         self.sliced = False
 
     def move(self, speed_mult=1.0):
+        """Función con la lógica de movimiento de un objeto"""
         if self.active:
             self.x += self.speed_x * speed_mult
             self.y += self.speed_y * speed_mult
@@ -163,6 +169,7 @@ class GameObject:
 
 
     def check_cut(self, p1, p2, extra_radius=0):
+        """Función encargada de verificar si el objeto ha sido cortado"""
         if not self.active or self.sliced:
             return False
 
@@ -194,6 +201,8 @@ class GameObject:
 
 
 class Fruit(GameObject):
+    """Clase que representa una fruta, hereda de GameObject"""
+
     def __init__(self, screen_width, screen_height):
         super().__init__(screen_width, screen_height)
         self.fruit_type = random.choice(FRUIT_TYPES)
@@ -209,6 +218,7 @@ class Fruit(GameObject):
 
 
 class Bomb(GameObject):
+    """Clase que representa una bomba, hereda de GameObject"""
     def __init__(self, screen_width, screen_height):
         super().__init__(screen_width, screen_height)
         self.image = LOADED_IMAGES.get("bomb")
@@ -224,6 +234,8 @@ class Bomb(GameObject):
 
 
 class PowerUp(GameObject):
+    """Clase que representa un powerup, hereda de GameObject"""
+
     def __init__(self, screen_width, screen_height):
         super().__init__(screen_width, screen_height)
         self.image = LOADED_IMAGES.get("powerup")
@@ -239,6 +251,7 @@ class PowerUp(GameObject):
 
 
 class Explosion:
+    """Clase encargada de representar una animación de explosión"""
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -262,6 +275,7 @@ class Explosion:
 
 
 class CutFruit:
+    """Clase encargada de representar la fruta cortada"""
     def __init__(self, fruit, p1=None, p2=None):
         self.x = fruit.x
         self.y = fruit.y
