@@ -128,7 +128,7 @@ def run_splash_screen_loop(screen, clock):
     global loading_done
     
     try:
-        splash_path = resource_path("SPLASH_SCREEN.jpeg")
+        splash_path = resource_path("SPLASH_SCREEN.png")
         splash_img = pygame.image.load(splash_path).convert_alpha()
         img_rect = splash_img.get_rect()
         img_ratio = img_rect.width / img_rect.height
