@@ -113,7 +113,7 @@ def loading_worker():
 
     # Cámara (Lento)
     print("Iniciando cámara...")
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     cap.set(3, SCREEN_WIDTH)
     cap.set(4, SCREEN_HEIGHT)
     cap.read() 
@@ -216,7 +216,12 @@ def draw_dynamic_trail(surface, points, color_inner, color_outer, max_width=20):
         pygame.draw.polygon(surface, color_outer, polygon_points)
         pygame.draw.lines(surface, color_inner, False, points, 2)
 
-def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana_anim_idx, rotate=True):
+def lerp_angle(start, end, amount):
+    """Interpola suavemente entre dos ángulos (grados)"""
+    difference = (end - start + 180) % 360 - 180
+    return start + difference * amount
+
+def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana_anim_idx, angle=0):
     if len(points) > 1:
         if katana_active:
             # Katana 
@@ -242,10 +247,10 @@ def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana
         idx = max(0, min(katana_anim_idx, len(katana_frames) - 1))
         img = katana_frames[idx]
 
-    if rotate and len(points) > 1:
-        x2, y2 = points[-2]
-        angle = math.degrees(math.atan2(y - y2, x - x2))
-        img = pygame.transform.rotate(img, -angle)
+    if len(points) > 1:
+        # Usamos el ángulo calculado suavemente en el main
+        final_angle = -angle 
+        img = pygame.transform.rotate(img, final_angle)
 
     rect = img.get_rect(center=(x, y))
     surface.blit(img, rect)
@@ -301,6 +306,7 @@ def main():
     katana_timer = 0
     katana_anim_idx = 5
     katana_anim_acc = 0.0
+    current_blade_angle = 0.0
 
     # Estados del juego
     paused = False
@@ -413,11 +419,28 @@ def main():
             katana_anim_idx = 5
             katana_anim_acc = 0.0
 
+        # Calculo del ángulo suave
+        if len(blade_points) >= 2:
+            p1 = blade_points[-2]
+            p2 = blade_points[-1]
+            dx = p2[0] - p1[0]
+            dy = p2[1] - p1[1]
+            dist = math.hypot(dx, dy)
+            
+            # Solo actualizamos el ángulo si hay movimiento significativo
+            # Para evitar el stuttering (temblique) en reposo
+            if dist > 10: 
+                target_angle = math.degrees(math.atan2(dy, dx))
+                # Interpolar hacia el nuevo ángulo
+                # Ajustar el 0.4 para más o menos suavizado (menor = más suave/lento)
+                current_blade_angle = lerp_angle(current_blade_angle, target_angle, 0.4)
+
+
         # Dibujar
         if background: screen.blit(background, (0, 0))
         else: screen.fill((50, 50, 50))
 
-        draw_weapon(screen, blade_points, knife_img, katana_frames, katana_active, katana_anim_idx, rotate=True)
+        draw_weapon(screen, blade_points, knife_img, katana_frames, katana_active, katana_anim_idx, angle=current_blade_angle)
 
         extra_radius = KATANA_EXTRA_RADIUS if katana_active else 0
 
