@@ -85,6 +85,12 @@ def loading_worker():
         loaded_resources['katana_sound'] = katana_sound
     except:
         loaded_resources['katana_sound'] = None
+    try:
+        explosion_sound = pygame.mixer.Sound(resource_path("soundtrack", "explosion.wav"))
+        explosion_sound.set_volume(0.6)
+        loaded_resources['explosion_sound'] = explosion_sound
+    except:
+        loaded_resources['explosion_sound'] = None
 
     # Imágenes
     load_images()
@@ -113,7 +119,7 @@ def loading_worker():
 
     # Cámara (Lento)
     print("Iniciando cámara...")
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     cap.set(3, SCREEN_WIDTH)
     cap.set(4, SCREEN_HEIGHT)
     cap.read() 
@@ -277,6 +283,7 @@ def main():
     slice_sound = loaded_resources.get('slice_sound')
     katana_sound = loaded_resources.get('katana_sound')
     knife_img = loaded_resources.get('knife_img')
+    explosion_sound = loaded_resources.get('explosion_sound')
     katana_frames = loaded_resources.get('katana_frames')
     background = loaded_resources.get('background')
     cap = loaded_resources.get('cap')
@@ -489,6 +496,8 @@ def main():
                                 exp = Explosion(obj.x, obj.y)
                                 exp.animation_speed = 0.1 
                                 explosions.append(exp)
+                                if explosion_sound:
+                                    explosion_sound.play()
                                 try: pygame.mixer.music.stop()
                                 except: pass
 
