@@ -9,9 +9,8 @@ import time
 from hand_tracker import HandTracker
 from game_objects import Fruit, CutFruit, Bomb, Explosion, PowerUp, load_images, LOADED_IMAGES
 
-# Variables Globales
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+SCREEN_WIDTH = 0
+SCREEN_HEIGHT = 0
 MAX_BLADE_POINTS = 25
 SMOOTH_FACTOR = 0.6
 BOMB_PROB = 0.2
@@ -120,8 +119,8 @@ def loading_worker():
     # Cámara (Lento)
     print("Iniciando cámara...")
     cap = cv2.VideoCapture(0)
-    cap.set(3, SCREEN_WIDTH)
-    cap.set(4, SCREEN_HEIGHT)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, SCREEN_WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, SCREEN_HEIGHT)
     cap.read() 
     loaded_resources['cap'] = cap
     
@@ -130,55 +129,66 @@ def loading_worker():
 
 
 def run_splash_screen_loop(screen, clock):
-    """Función que ejecuta el bucle de la pantalla de carga """
+    """Bucle de pantalla de carga (robusto y escalado correcto)."""
     global loading_done
-    
+
+    sw, sh = screen.get_size()   # tamaño real de la ventana
+    splash_img_scaled = None
+    x_pos = 0
+    y_pos = 0
+
+    # Cargar y escalar splash
     try:
         splash_path = resource_path("SPLASH_SCREEN.png")
         splash_img = pygame.image.load(splash_path).convert_alpha()
-        img_rect = splash_img.get_rect()
-        img_ratio = img_rect.width / img_rect.height
-        screen_ratio = SCREEN_WIDTH / SCREEN_HEIGHT
-        
+
+        iw, ih = splash_img.get_size()
+        img_ratio = iw / ih
+        screen_ratio = sw / sh
+
         if img_ratio > screen_ratio:
-            new_width = SCREEN_WIDTH; new_height = int(new_width / img_ratio)
+            new_w = sw
+            new_h = int(sw / img_ratio)
         else:
-            new_height = SCREEN_HEIGHT; new_width = int(new_height * img_ratio)
-            
-        splash_img_scaled = pygame.transform.smoothscale(splash_img, (new_width, new_height))
-        x_pos = (SCREEN_WIDTH - new_width) // 2
-        y_pos = (SCREEN_HEIGHT - new_height) // 2
+            new_h = sh
+            new_w = int(sh * img_ratio)
+
+        splash_img_scaled = pygame.transform.smoothscale(splash_img, (new_w, new_h))
+        x_pos = (sw - new_w) // 2
+        y_pos = (sh - new_h) // 2
+
     except Exception as e:
         print(f"Error splash: {e}")
-        splash_img_scaled = None
 
+    # Lanzar carga en hilo
     loading_done = False
-    loader_thread = threading.Thread(target=loading_worker)
-    loader_thread.daemon = True
+    loader_thread = threading.Thread(target=loading_worker, daemon=True)
     loader_thread.start()
 
     dot_timer = time.time()
     num_dots = 0
-    
+
     while not loading_done:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
-        
+                pygame.quit()
+                sys.exit()
+
         screen.fill((0, 0, 0))
-        if splash_img_scaled:
+
+        if splash_img_scaled is not None:
             screen.blit(splash_img_scaled, (x_pos, y_pos))
-            
+
         if time.time() - dot_timer > 0.5:
             num_dots = (num_dots + 1) % 4
             dot_timer = time.time()
-            
+
         loading_text = "CARGANDO" + "." * num_dots
-        draw_fruit_ninja_text(screen, loading_text, SCREEN_WIDTH // 2, 100)
-        
+        draw_fruit_ninja_text(screen, loading_text, sw // 2, 100)
+
         pygame.display.flip()
         clock.tick(30)
-        
+
     loader_thread.join()
 
 def draw_dynamic_trail(surface, points, color_inner, color_outer, max_width=20):
@@ -262,13 +272,17 @@ def draw_weapon(surface, points, knife_img, katana_frames, katana_active, katana
     surface.blit(img, rect)
 
 def main():
+    global SCREEN_WIDTH, SCREEN_HEIGHT
     pygame.init()
     try:
         pygame.mixer.init()
     except:
         pass
 
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
+    info = pygame.display.Info()
+    SCREEN_WIDTH, SCREEN_HEIGHT = info.current_w, info.current_h
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+    SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
     pygame.display.set_caption("Visual Fruit Ninja")
     clock = pygame.time.Clock()
     pygame.mouse.set_visible(False)
